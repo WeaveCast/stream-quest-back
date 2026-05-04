@@ -1,0 +1,31 @@
+services:
+  reader-back:
+    image: stream-quest
+    container_name: stream-quest
+    restart: always
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    volumes:
+      - .:/app
+      - /app/node_modules
+    ports:
+      - '${PORT:-3999}:${PORT:-3999}'
+    environment:
+      - NODE_ENV=development
+      - CHOKIDAR_USEPOLLING=true
+      - ADMIN_USERNAME=${ADMIN_USERNAME}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+    stdin_open: true
+    tty: true
+    networks:
+      - postgresql
+      - quest
+    env_file:
+      - .env
+
+networks:
+  postgresql:
+    external: true
+  quest:
+    external: true

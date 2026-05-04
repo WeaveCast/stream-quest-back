@@ -1,0 +1,330 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum CampaignStatus {
+  ACTIVE
+  PAUSED
+  ENDED
+}
+
+enum ConclusionType {
+  VICTORY
+  DEFEAT
+  ABANDONNED
+}
+
+enum SessionStatus {
+  PLANNED
+  LIVE
+  ENDED
+}
+
+enum PlayerStatus {
+  ACTIVE
+  LEFT
+  DIED
+}
+
+enum TriggerType {
+  CHAT_COMMAND
+  SUB
+  BITS
+  RAID
+}
+
+enum Operator {
+  AND
+  OR
+}
+
+enum ContextType {
+  TIME_OF_DAY
+  WEATHER
+  LOCATION
+}
+
+enum ThresholdType {
+  CHAOS
+  BLESSING
+}
+
+enum ResolutionMode {
+  RANDOM
+  MJ_CHOICE
+  VIEWER_VOTE
+}
+
+enum SessionEventStatus {
+  PENDING
+  VALIDATED
+  MODIFIED
+  REJECTED
+}
+
+model User {
+  id                      String              @id @default(uuid())
+  twitchId                String              @unique
+  username                String
+  avatarUrl               String?
+  twitchAccessToken       String?
+  twitchRefreshToken      String?
+  twitchTokenExpiresAt    DateTime?
+  overlayToken            String              @unique @default(uuid())
+  createdAt               DateTime            @default(now())
+  updatedAt               DateTime            @updatedAt
+
+  campaigns               Campaign[]
+  eventTypes              EventType[]
+  events                  Event[]
+}
+
+model Campaign {
+  id                      String              @id @default(uuid())
+  title                   String
+  description             String?
+  status                  CampaignStatus      @default(ACTIVE)
+  conclusion              ConclusionType?
+  karmaValue              Int                 @default(0)
+  chaosThreshold          Int
+  blessingThreshold       Int
+  createdAt               DateTime            @default(now())
+  updatedAt               DateTime            @updatedAt
+
+  gameMaster              User                @relation(fields: [gameMasterId], references: [id])
+  gameMasterId            String
+  sessions                Session[]
+  karmaEvents             KarmaEvent[]
+  playerCharacters        PlayerCharacter[]
+  campaignEvents          CampaignEvent[]
+  thresholdEvents         CampaignThresholdEvent[]
+  viewerInteractions      ViewerInteraction[]
+}
+
+model Session {
+  id                      String              @id @default(uuid())
+  title                   String
+  status                  SessionStatus       @default(PLANNED)
+  startedAt               DateTime?        
+  endedAt                 DateTime?       
+  createdAt               DateTime            @default(now())
+  updatedAt               DateTime            @updatedAt
+
+  campaign                Campaign            @relation(fields: [campaignId], references: [id])
+  campaignId              String
+  contextSnapshots        ContextSnapshot[]
+  karmaEvents             KarmaEvent[]
+  sessionEvents           SessionEvent[]
+  sessionPlayers          SessionPlayerCharacter[]
+  viewerInteractions      ViewerInteraction[]
+}
+
+model ContextSnapshot {
+  id                      String              @id @default(uuid())
+  timeOfDay               String?
+  weather                 String?
+  location                String?
+  snapshotAt              DateTime
+  
+  session                 Session             @relation(fields: [sessionId], references: [id])
+  sessionId               String
+}
+
+model KarmaEvent {
+  id                      String              @id @default(uuid())
+  value                   Int
+  reason                  String?
+  occurredAt              DateTime
+
+  session                 Session             @relation(fields: [sessionId], references: [id])
+  sessionId               String
+  campaign                Campaign            @relation(fields: [campaignId], references: [id])
+  campaignId              String
+}
+
+model PlayerCharacter {
+  id                      String              @id @default(uuid())
+  name                    String
+  class                   String?
+  level                   Int?                @default(1)
+  avatarUrl               String?
+  isAlive                 Boolean             @default(true)
+  displayAvatar           Boolean             @default(true)
+  displayClass            Boolean             @default(true)
+  displayLevel            Boolean             @default(true)
+  createdAt               DateTime            @default(now())
+  updatedAt               DateTime            @updatedAt
+  
+  campaign                Campaign            @relation(fields: [campaignId], references: [id])
+  campaignId              String
+  sessionPlayers          SessionPlayerCharacter[]
+}
+
+model SessionPlayerCharacter {
+  id                      String              @id @default(uuid())
+  joinedAt                DateTime
+  leftAt                  DateTime?
+  status                  PlayerStatus        @default(ACTIVE)
+
+  session                 Session             @relation(fields: [sessionId], references: [id])
+  sessionId               String
+  playerCharacter         PlayerCharacter     @relation(fields: [playerCharacterId], references: [id])
+  playerCharacterId       String
+}
+
+model EventType {
+  id                      String              @id @default(uuid())
+  name                    String
+  description             String?
+  createdAt               DateTime            @default(now())
+  updatedAt               DateTime            @updatedAt
+
+  createdBy               User                @relation(fields: [createdById], references: [id])
+  createdById             String
+  events                  Event[]
+}
+
+model Event {
+  id                      String              @id @default(uuid())
+  name                    String
+  karmaValue              Int                 @default(0)
+  isTemplate              Boolean             @default(false)
+  isPublic                Boolean             @default(false)
+  createdAt               DateTime            @default(now())
+  updatedAt               DateTime            @updatedAt
+  
+  eventType               EventType           @relation(fields: [eventTypeId], references: [id])
+  eventTypeId             String
+  gameMaster              User                @relation(fields: [gameMasterId], references: [id])
+  gameMasterId            String
+  rules                   Rule[]
+  resolutions             Resolution[]
+  campaignEvents          CampaignEvent[]
+  thresholdEvents         CampaignThresholdEvent[]
+  sessionEvents           SessionEvent[]
+}
+
+model Rule {
+  id                      String              @id @default(uuid())
+  triggerType             TriggerType
+  config                  Json
+  cooldown                Int                 @default(300)
+  isActive                Boolean             @default(true)
+  createdAt               DateTime            @default(now())
+  updatedAt               DateTime            @updatedAt
+  
+  event                   Event               @relation(fields: [eventId], references: [id])
+  eventId                 String
+}
+
+model Resolution {
+  id                      String              @id @default(uuid())
+  message                 String?
+  isFallback              Boolean             @default(false)
+  createdAt               DateTime            @default(now())
+  updatedAt               DateTime            @updatedAt
+
+  event                   Event               @relation(fields: [eventId], references: [id])
+  eventId                 String
+  conditionGroups         ConditionGroup[]
+  sessionEventResolutions SessionEventResolution[]
+  sessionEvents           SessionEvent[]      @relation("SessionEventResolutionChosen")
+}
+
+model ConditionGroup {
+  id                      String              @id @default(uuid())
+  operator                Operator
+  createdAt               DateTime            @default(now())
+  updatedAt               DateTime            @updatedAt
+
+  resolution              Resolution?         @relation(fields: [resolutionId], references: [id])
+  resolutionId            String?
+  parentGroup             ConditionGroup?     @relation("ConditionGroupChildren", fields: [parentGroupId], references: [id])
+  parentGroupId           String?
+  children                ConditionGroup[]    @relation("ConditionGroupChildren")
+  conditions              Condition[]
+}
+
+model Condition {
+  id                      String              @id @default(uuid())
+  contextType             ContextType
+  value                   String
+  createdAt               DateTime            @default(now())
+  updatedAt               DateTime            @updatedAt
+
+  conditionGroup          ConditionGroup      @relation(fields: [conditionGroupId], references: [id])
+  conditionGroupId        String
+}
+
+model CampaignEvent {
+  id                      String              @id @default(uuid())
+  isActive                Boolean             @default(true)
+
+  campaign                Campaign            @relation(fields: [campaignId], references: [id])
+  campaignId              String
+  event                   Event               @relation(fields: [eventId], references: [id])
+  eventId                 String
+}
+
+model CampaignThresholdEvent {
+  id                      String              @id @default(uuid())
+  thresholdType           ThresholdType
+  resolutionMode          ResolutionMode      @default(MJ_CHOICE)
+
+  campaign                Campaign            @relation(fields: [campaignId], references: [id])
+  campaignId              String
+  event                   Event               @relation(fields: [eventId], references: [id])
+  eventId                 String
+}
+
+model SessionEvent {
+  id                      String              @id @default(uuid())
+  status                  SessionEventStatus  @default(PENDING)
+  finalMessage            String?
+  triggeredAt             DateTime
+  resolvedAt              DateTime?
+  
+  session                 Session             @relation(fields: [sessionId], references: [id])
+  sessionId               String
+  event                   Event               @relation(fields: [eventId], references: [id])
+  eventId                 String
+  chosenResolution        Resolution?         @relation("SessionEventResolutionChosen", fields: [chosenResolutionId], references: [id])
+  chosenResolutionId      String?
+  sessionEventResolutions SessionEventResolution[]
+  viewerInteractions      ViewerInteraction[]
+}
+
+model SessionEventResolution {
+  id                      String              @id @default(uuid())
+
+  sessionEvent            SessionEvent        @relation(fields: [sessionEventId], references: [id])
+  sessionEventId          String
+  resolution              Resolution          @relation(fields: [resolutionId], references: [id])
+  resolutionId            String
+}
+
+model ViewerInteraction {
+  id                      String              @id @default(uuid())
+  twitchUsername          String
+  twitchUserId            String
+  triggerType             TriggerType
+  value                   Int?
+  interactedAt            DateTime
+  
+  sessionEvent            SessionEvent        @relation(fields: [sessionEventId], references: [id])
+  sessionEventId          String
+  session                 Session             @relation(fields: [sessionId], references: [id])
+  sessionId               String
+  campaign                Campaign            @relation(fields: [campaignId], references: [id])
+  campaignId              String
+}
