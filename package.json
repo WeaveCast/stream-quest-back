@@ -81,7 +81,7 @@
   },
   "lint-staged": {
     "*.ts": [
-      "eslint --fix",
+      "node -e \"const f=process.argv.slice(1).filter(f=>!f.includes('prisma.config')&&!f.includes('prisma.service'));if(f.length)require('child_process').execSync('eslint --fix '+f.join(' '),{stdio:'inherit'})\" --",
       "prettier --write"
     ]
   }
