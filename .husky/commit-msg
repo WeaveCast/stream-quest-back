@@ -1,1 +1,16 @@
-./node_modules/.bin/commitlint --edit $1
+./node_modules/.bin/commitlint --edit $1 || (echo "
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ✘ Invalid commit message format
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Expected format:
+  <type>(<scope>): <subject>
+
+  Types: feat | fix | chore | docs | style | refactor | test | perf
+
+  Examples:
+  feat(auth): add twitch oauth login
+  fix(session): resolve websocket disconnect issue
+  chore: update dependencies
+  docs: update installation guide
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+" && exit 1)
