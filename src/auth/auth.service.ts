@@ -7,26 +7,13 @@ import { JwtService } from '@nestjs/jwt';
 import { Response, Request } from 'express';
 import { PrismaService } from '../prisma/prisma.service';
 import { User } from '../generated/prisma/client';
+import {
+  TwitchProfileInterface,
+  TwitchTokenInterface,
+  JwtPayloadInterface,
+  UserInformationsInterface,
+} from '../interfaces/auth.interface';
 import * as crypto from 'crypto';
-
-interface twitchProfileInterface {
-  id: string;
-  login: string;
-  display_name: string;
-  profile_image_url: string;
-  email: string;
-}
-
-interface twitchTokenInterface {
-  access_token: string;
-  refresh_token: string;
-  expires_in: number;
-}
-
-interface jwtPayloadInterface {
-  sub: string;
-  username: string;
-}
 
 @Injectable()
 export class AuthService {
@@ -74,8 +61,31 @@ export class AuthService {
     return `https://id.twitch.tv/oauth2/authorize?${params.toString()}`;
   }
 
+  async getUserInformationsFromCookie(
+    req: Request,
+  ): Promise<UserInformationsInterface | null> {
+    const token = req.signedCookies['access_token'] as string | undefined;
+
+    if (!token) {
+      throw new NotFoundException('User not found.');
+    }
+
+    const payload = this.jwtService.verify<JwtPayloadInterface>(token);
+
+    return this.prisma.user.findUnique({
+      where: { id: payload.sub },
+      select: {
+        id: true,
+        username: true,
+        avatarUrl: true,
+        overlayToken: true,
+        createdAt: true,
+      },
+    });
+  }
+
   async getValidAccessToken(userId: string): Promise<string> {
-    const user = await this.prisma.user.findFirst({
+    const user = await this.prisma.user.findUnique({
       where: { id: userId },
     });
 
@@ -94,6 +104,34 @@ export class AuthService {
     }
 
     return user.twitchAccessToken!;
+  }
+
+  async revokeTwitchToken(userId: string, res: Response) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found.');
+    }
+
+    const params: URLSearchParams = new URLSearchParams({
+      client_id: this.clientId,
+      token: user.twitchAccessToken!,
+    });
+
+    const response = await fetch('https://id.twitch.tv/oauth2/revoke', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: params.toString(),
+    });
+
+    if (!response.ok) {
+      throw new UnauthorizedException('Failed to revoke Twitch token');
+    }
+
+    await this.clearTwitchTokenInDatabase(user);
+    res.clearCookie('access_token');
   }
 
   async handleTwitchCallback(
@@ -120,7 +158,7 @@ export class AuthService {
 
   private async exchangeCodeForToken(
     code: string,
-  ): Promise<twitchTokenInterface> {
+  ): Promise<TwitchTokenInterface> {
     const params: URLSearchParams = new URLSearchParams({
       client_id: this.clientId,
       client_secret: this.clientSecret,
@@ -139,12 +177,12 @@ export class AuthService {
       throw new UnauthorizedException('Failed to exchange code for token');
     }
 
-    return response.json() as Promise<twitchTokenInterface>;
+    return response.json() as Promise<TwitchTokenInterface>;
   }
 
   private async getTwitchProfile(
     accessToken: string,
-  ): Promise<twitchProfileInterface> {
+  ): Promise<TwitchProfileInterface> {
     const response = await fetch('https://api.twitch.tv/helix/users', {
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -157,15 +195,15 @@ export class AuthService {
     }
 
     const data = (await response.json()) as {
-      data: Array<twitchProfileInterface>;
+      data: Array<TwitchProfileInterface>;
     };
 
     return data.data[0];
   }
 
   private async upsertUserInDatabase(
-    profile: twitchProfileInterface,
-    token: twitchTokenInterface,
+    profile: TwitchProfileInterface,
+    token: TwitchTokenInterface,
   ): Promise<User> {
     const twitchData = {
       username: profile.display_name,
@@ -188,7 +226,7 @@ export class AuthService {
 
   private async updateUserInDatabase(
     user: User,
-    token: twitchTokenInterface,
+    token: TwitchTokenInterface,
   ): Promise<User> {
     const twitchData = {
       twitchAccessToken: token.access_token,
@@ -202,8 +240,19 @@ export class AuthService {
     });
   }
 
+  private async clearTwitchTokenInDatabase(user: User) {
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        twitchAccessToken: null,
+        twitchRefreshToken: null,
+        twitchTokenExpiresAt: null,
+      },
+    });
+  }
+
   private generateJwt(user: User, res: Response) {
-    const payload: jwtPayloadInterface = {
+    const payload: JwtPayloadInterface = {
       sub: user.id,
       username: user.username,
     };
@@ -239,6 +288,6 @@ export class AuthService {
       throw new UnauthorizedException('Failed to refresh Twitch token');
     }
 
-    return response.json() as Promise<twitchTokenInterface>;
+    return response.json() as Promise<TwitchTokenInterface>;
   }
 }
