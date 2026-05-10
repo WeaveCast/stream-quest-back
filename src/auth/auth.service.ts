@@ -61,19 +61,11 @@ export class AuthService {
     return `https://id.twitch.tv/oauth2/authorize?${params.toString()}`;
   }
 
-  async getUserInformationsFromCookie(
+  async getAuthenticatedUser(
     req: Request,
   ): Promise<UserInformationsInterface | null> {
-    const token = req.signedCookies['access_token'] as string | undefined;
-
-    if (!token) {
-      throw new NotFoundException('User not found.');
-    }
-
-    const payload = this.jwtService.verify<JwtPayloadInterface>(token);
-
     return this.prisma.user.findUnique({
-      where: { id: payload.sub },
+      where: { id: req.user!.sub },
       select: {
         id: true,
         username: true,

@@ -2,6 +2,8 @@ import { Controller, Get, Post, Query, Req, Res } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import type { Request, Response } from 'express';
 import { UserInformationsInterface } from '../interfaces/auth.interface';
+import { UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from './jwt-auth.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -23,14 +25,16 @@ export class AuthController {
   }
 
   @Get('me')
+  @UseGuards(JwtAuthGuard)
   async myInformations(
     @Req() req: Request,
   ): Promise<UserInformationsInterface | null> {
-    return await this.authService.getUserInformationsFromCookie(req);
+    return await this.authService.getAuthenticatedUser(req);
   }
 
   @Post('logout')
-  async twitchLogout(@Query('userId') userId: string, @Res() res: Response) {
-    await this.authService.revokeTwitchToken(userId, res);
+  @UseGuards(JwtAuthGuard)
+  async twitchLogout(@Req() req: Request, @Res() res: Response) {
+    await this.authService.revokeTwitchToken(req.user!.sub, res);
   }
 }
