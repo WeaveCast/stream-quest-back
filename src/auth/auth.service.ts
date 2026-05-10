@@ -163,6 +163,7 @@ export class AuthService {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: params.toString(),
+      signal: AbortSignal.timeout(30000), // 30 secondes
     });
 
     if (!response.ok) {
@@ -259,7 +260,7 @@ export class AuthService {
       maxAge: sevenDaysMaxAge,
     });
 
-    res.redirect(process.env.FRONTEND_URL ?? 'http://localhost:3000');
+    res.redirect(302, process.env.FRONTEND_URL ?? 'http://localhost:3000/');
   }
 
   private async refreshTwitchToken(user: User) {
