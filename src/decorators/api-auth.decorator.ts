@@ -7,7 +7,7 @@ import {
   ApiResponse,
   ApiResponseOptions,
 } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { JwtAuthGuard } from '../guards/auth/jwt-auth.guard';
 import {
   ErrorResponseDto,
   UnauthorizedResponseDto,
