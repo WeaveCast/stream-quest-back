@@ -15,10 +15,14 @@ import {
   CampaignFilterStatus,
 } from '../dto/campaign/campagn-filter.dto';
 import { Prisma } from '../generated/prisma/client';
+import { CampaignRepository } from './campaign.repository';
 
 @Injectable()
 export class CampaignService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly reposity: CampaignRepository,
+  ) {}
 
   async getCampaignList(
     req: Request,
@@ -39,17 +43,7 @@ export class CampaignService {
         break;
     }
 
-    return await this.prisma.campaign.findMany({
-      where: whereClause,
-      include: {
-        _count: {
-          select: {
-            sessions: true,
-            campaignEvents: true,
-          },
-        },
-      },
-    });
+    return this.reposity.getCampaignList(whereClause);
   }
 
   async getCampaign(id: string, req: Request): Promise<CampaignResponseDto> {
@@ -57,17 +51,8 @@ export class CampaignService {
       throw new BadRequestException('Campaign id is missing');
     }
 
-    const campaign = await this.prisma.campaign.findFirst({
-      where: { id: id, gameMasterId: req.user?.sub },
-      include: {
-        _count: {
-          select: {
-            sessions: true,
-            campaignEvents: true,
-          },
-        },
-      },
-    });
+    const whereClause = { id: id, gameMasterId: req.user?.sub };
+    const campaign = await this.reposity.getCampaign(whereClause);
 
     if (!campaign) {
       throw new NotFoundException('Campaign not found');
@@ -87,9 +72,18 @@ export class CampaignService {
       blessingThreshold: dto.blessingThreshold,
     });
 
-    return await this.prisma.campaign.create({
-      data: { gameMasterId: userId, ...dto },
-    });
+    const data = {
+      gameMaster: {
+        connect: {
+          id: userId,
+        },
+      },
+      ...dto,
+    };
+
+    const test = this.reposity.createCampaign(data);
+    console.log(test);
+    return test;
   }
 
   async updateCampaign(
@@ -110,18 +104,9 @@ export class CampaignService {
 
     this.validateThresholds({ chaosThreshold, blessingThreshold });
 
-    return await this.prisma.campaign.update({
-      where: { id: campaignId },
-      data: { ...dto },
-      include: {
-        _count: {
-          select: {
-            sessions: true,
-            campaignEvents: true,
-          },
-        },
-      },
-    });
+    const whereClause = { id: campaignId };
+
+    return this.reposity.updateCampaign(whereClause, dto);
   }
 
   async updateCampaignStatus(
@@ -129,19 +114,9 @@ export class CampaignService {
     req: Request,
   ): Promise<CampaignResponseDto> {
     const campaignId: string = req.campaign!.id;
+    const whereClause = { id: campaignId };
 
-    return await this.prisma.campaign.update({
-      where: { id: campaignId },
-      data: { ...dto },
-      include: {
-        _count: {
-          select: {
-            sessions: true,
-            campaignEvents: true,
-          },
-        },
-      },
-    });
+    return this.reposity.updateCampaignStatus(whereClause, dto);
   }
 
   async updateCampaignKarma(
@@ -149,66 +124,30 @@ export class CampaignService {
     req: Request,
   ): Promise<CampaignResponseDto> {
     const campaignId: string = req.campaign!.id;
+    const whereClause = { id: campaignId };
 
-    return await this.prisma.campaign.update({
-      where: { id: campaignId },
-      data: { ...dto },
-      include: {
-        _count: {
-          select: {
-            sessions: true,
-            campaignEvents: true,
-          },
-        },
-      },
-    });
+    return this.reposity.updateCampaignKarma(whereClause, dto);
   }
 
   async softRemoveCampaign(req: Request): Promise<CampaignResponseDto> {
     const campaignId: string = req.campaign!.id;
-    const deletedAt = new Date();
-    const definitiveDeletionAt = new Date(deletedAt);
-    definitiveDeletionAt.setDate(definitiveDeletionAt.getDate() + 30);
+    const whereClause = { id: campaignId };
+    const data = { deletedAt: new Date() };
 
-    return await this.prisma.campaign.update({
-      where: { id: campaignId },
-      data: {
-        deletedAt: deletedAt,
-        definitiveDeletionAt: definitiveDeletionAt,
-      },
-      include: {
-        _count: {
-          select: {
-            sessions: true,
-            campaignEvents: true,
-          },
-        },
-      },
-    });
+    return this.reposity.softRemoveCampaign(whereClause, data);
   }
 
   async restoreSoftRemovedCampaign(req: Request): Promise<CampaignResponseDto> {
     const campaignId: string = req.campaign!.id;
 
     if (!req.campaign!.deletedAt) {
-      throw new BadRequestException('Campaign is not in trash');
+      throw new BadRequestException('Campaign must be soft-deleted first');
     }
 
-    return await this.prisma.campaign.update({
-      where: { id: campaignId },
-      data: {
-        deletedAt: null,
-        definitiveDeletionAt: null,
-      },
-      include: {
-        _count: {
-          select: {
-            sessions: true,
-            campaignEvents: true,
-          },
-        },
-      },
-    });
+    const whereClause = { id: campaignId };
+    const data = { deletedAt: null };
+
+    return this.reposity.restoreSoftRemovedCampaign(whereClause, data);
   }
 
   async deleteCampaign(req: Request): Promise<CampaignResponseDto> {
@@ -218,9 +157,9 @@ export class CampaignService {
       throw new BadRequestException('Campaign must be soft-deleted first');
     }
 
-    return await this.prisma.campaign.delete({
-      where: { id: campaignId },
-    });
+    const whereClause = { id: campaignId };
+
+    return this.reposity.deleteCampaign(whereClause);
   }
 
   private validateThresholds(thresholds: {

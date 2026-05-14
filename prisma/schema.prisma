@@ -102,7 +102,6 @@ model Campaign {
   createdAt               DateTime            @default(now())
   updatedAt               DateTime            @updatedAt
   deletedAt               DateTime?
-  definitiveDeletionAt    DateTime?
 
   gameMaster              User                @relation(fields: [gameMasterId], references: [id])
   gameMasterId            String
@@ -116,7 +115,6 @@ model Campaign {
   @@index([gameMasterId])
   @@index([status])
   @@index([deletedAt])
-  @@index([definitiveDeletionAt])
 }
 
 model Session {
