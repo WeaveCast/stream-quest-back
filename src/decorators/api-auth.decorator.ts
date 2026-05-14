@@ -2,6 +2,8 @@ import { applyDecorators, UseGuards } from '@nestjs/common';
 import {
   ApiCookieAuth,
   ApiOperation,
+  ApiParam,
+  ApiParamOptions,
   ApiQuery,
   ApiQueryOptions,
   ApiResponse,
@@ -16,6 +18,7 @@ import {
 interface ApiPublicRouteOptions {
   responses?: ApiResponseOptions[];
   queries?: ApiQueryOptions[];
+  params?: ApiParamOptions[];
 }
 
 export function ApiAuthRoute(
@@ -27,6 +30,7 @@ export function ApiAuthRoute(
     ApiCookieAuth(),
     ApiOperation({ summary }),
     ...(options.queries ?? []).map((q) => ApiQuery(q)),
+    ...(options.params ?? []).map((p) => ApiParam(p)),
     ApiResponse({
       status: 401,
       description: 'Unauthorized',
@@ -48,6 +52,7 @@ export function ApiPublicRoute(
   return applyDecorators(
     ApiOperation({ summary }),
     ...(options.queries ?? []).map((q) => ApiQuery(q)),
+    ...(options.params ?? []).map((p) => ApiParam(p)),
     ApiResponse({
       status: 500,
       description: 'Internal server error',
