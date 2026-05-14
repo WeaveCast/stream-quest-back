@@ -14,6 +14,7 @@ import {
   ErrorResponseDto,
   UnauthorizedResponseDto,
 } from '../dto/error-response.dto';
+import { Public } from './public.decorator';
 
 interface ApiPublicRouteOptions {
   responses?: ApiResponseOptions[];
@@ -50,6 +51,7 @@ export function ApiPublicRoute(
   options: ApiPublicRouteOptions = {},
 ) {
   return applyDecorators(
+    Public(),
     ApiOperation({ summary }),
     ...(options.queries ?? []).map((q) => ApiQuery(q)),
     ...(options.params ?? []).map((p) => ApiParam(p)),

@@ -10,14 +10,37 @@ import { CampaignResponseDto } from '../dto/campaign/campaign-response.dto';
 import { UpdateCampaignDto } from '../dto/campaign/update-campaign.dto';
 import { UpdateStatusDto } from '../dto/campaign/update-status.dto';
 import { UpdateKarmaDto } from '../dto/campaign/update-karma.dto';
+import {
+  CampaignFilterDto,
+  CampaignFilterStatus,
+} from '../dto/campaign/campagn-filter.dto';
+import { Prisma } from '../generated/prisma/client';
 
 @Injectable()
 export class CampaignService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async getCampaignList(req: Request): Promise<CampaignResponseDto[]> {
+  async getCampaignList(
+    req: Request,
+    filterDto: CampaignFilterDto,
+  ): Promise<CampaignResponseDto[]> {
+    const whereClause: Prisma.CampaignWhereInput = {
+      gameMasterId: req.user!.sub,
+    };
+
+    switch (filterDto.status) {
+      case CampaignFilterStatus.ACTIVE:
+        whereClause.deletedAt = null;
+        break;
+      case CampaignFilterStatus.DELETED:
+        whereClause.deletedAt = { not: null };
+        break;
+      case CampaignFilterStatus.ALL:
+        break;
+    }
+
     return await this.prisma.campaign.findMany({
-      where: { gameMasterId: req.user?.sub, deletedAt: null },
+      where: whereClause,
       include: {
         _count: {
           select: {
@@ -35,7 +58,7 @@ export class CampaignService {
     }
 
     const campaign = await this.prisma.campaign.findFirst({
-      where: { id: id, gameMasterId: req.user?.sub, deletedAt: null },
+      where: { id: id, gameMasterId: req.user?.sub },
       include: {
         _count: {
           select: {

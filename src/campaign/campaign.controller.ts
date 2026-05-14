@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -16,9 +17,13 @@ import { CreateCampaignDto } from '../dto/campaign/create-campaign.dto';
 import { UpdateCampaignDto } from '../dto/campaign/update-campaign.dto';
 import { UpdateStatusDto } from '../dto/campaign/update-status.dto';
 import { UpdateKarmaDto } from '../dto/campaign/update-karma.dto';
-import { CampaignOwnershipGuard } from '../guards/campaign/campaign-ownership.guard';
 import { CampaignService } from './campaign.service';
 import { CampaignResponseDto } from '../dto/campaign/campaign-response.dto';
+import {
+  CampaignFilterDto,
+  CampaignFilterStatus,
+} from '../dto/campaign/campagn-filter.dto';
+import { CampaignOwnershipGuard } from '../guards/campaign/campaign-ownership.guard';
 
 @ApiTags('Campaign')
 @Controller('campaign')
@@ -27,6 +32,15 @@ export class CampaignController {
 
   @Get('')
   @ApiAuthRoute("Get the user's list of campaigns", {
+    queries: [
+      {
+        name: 'status',
+        enum: CampaignFilterStatus,
+        description:
+          'Filter campaigns by deletion status (active, deleted, all)',
+        example: CampaignFilterStatus.ACTIVE,
+      },
+    ],
     responses: [
       {
         status: 200,
@@ -35,8 +49,11 @@ export class CampaignController {
       },
     ],
   })
-  async campaignList(@Req() req: Request): Promise<CampaignResponseDto[]> {
-    return this.campaignService.getCampaignList(req);
+  async campaignList(
+    @Query() filterDto: CampaignFilterDto,
+    @Req() req: Request,
+  ): Promise<CampaignResponseDto[]> {
+    return this.campaignService.getCampaignList(req, filterDto);
   }
 
   @Get(':id')
