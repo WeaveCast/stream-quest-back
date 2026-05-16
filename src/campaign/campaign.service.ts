@@ -5,7 +5,6 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCampaignDto } from '../dto/campaign/create-campaign.dto';
-import { Request } from 'express';
 import { CampaignResponseDto } from '../dto/campaign/campaign-response.dto';
 import { UpdateCampaignDto } from '../dto/campaign/update-campaign.dto';
 import { UpdateStatusDto } from '../dto/campaign/update-status.dto';
@@ -14,8 +13,9 @@ import {
   CampaignFilterDto,
   CampaignFilterStatus,
 } from '../dto/campaign/campagn-filter.dto';
-import { Prisma } from '../generated/prisma/client';
+import { Campaign, Prisma } from '../generated/prisma/client';
 import { CampaignRepository } from './campaign.repository';
+import { JwtPayloadInterface } from '../interfaces/auth.interface';
 
 @Injectable()
 export class CampaignService {
@@ -25,11 +25,11 @@ export class CampaignService {
   ) {}
 
   async getCampaignList(
-    req: Request,
+    user: JwtPayloadInterface,
     filterDto: CampaignFilterDto,
   ): Promise<CampaignResponseDto[]> {
     const whereClause: Prisma.CampaignWhereInput = {
-      gameMasterId: req.user!.sub,
+      gameMasterId: user.sub,
     };
 
     switch (filterDto.status) {
@@ -46,12 +46,15 @@ export class CampaignService {
     return this.reposity.getCampaignList(whereClause);
   }
 
-  async getCampaign(id: string, req: Request): Promise<CampaignResponseDto> {
+  async getCampaign(
+    id: string,
+    user: JwtPayloadInterface,
+  ): Promise<CampaignResponseDto> {
     if (!id) {
       throw new BadRequestException('Campaign id is missing');
     }
 
-    const whereClause = { id: id, gameMasterId: req.user?.sub };
+    const whereClause = { id: id, gameMasterId: user.sub };
     const campaign = await this.reposity.getCampaign(whereClause);
 
     if (!campaign) {
@@ -63,10 +66,8 @@ export class CampaignService {
 
   async createCampaign(
     dto: CreateCampaignDto,
-    req: Request,
+    user: JwtPayloadInterface,
   ): Promise<CampaignResponseDto> {
-    const userId: string = req.user!.sub;
-
     this.validateThresholds({
       chaosThreshold: dto.chaosThreshold,
       blessingThreshold: dto.blessingThreshold,
@@ -75,7 +76,7 @@ export class CampaignService {
     const data = {
       gameMaster: {
         connect: {
-          id: userId,
+          id: user.sub,
         },
       },
       ...dto,
@@ -86,19 +87,19 @@ export class CampaignService {
 
   async updateCampaign(
     dto: UpdateCampaignDto,
-    req: Request,
+    campaign: Campaign,
   ): Promise<CampaignResponseDto> {
-    const campaignId: string = req.campaign!.id;
+    const campaignId: string = campaign.id;
 
     const chaosThreshold =
       dto.chaosThreshold !== undefined
         ? dto.chaosThreshold
-        : req.campaign!.chaosThreshold;
+        : campaign.chaosThreshold;
 
     const blessingThreshold =
       dto.blessingThreshold !== undefined
         ? dto.blessingThreshold
-        : req.campaign!.blessingThreshold;
+        : campaign.blessingThreshold;
 
     this.validateThresholds({ chaosThreshold, blessingThreshold });
 
@@ -109,9 +110,9 @@ export class CampaignService {
 
   async updateCampaignStatus(
     dto: UpdateStatusDto,
-    req: Request,
+    campaign: Campaign,
   ): Promise<CampaignResponseDto> {
-    const campaignId: string = req.campaign!.id;
+    const campaignId: string = campaign.id;
     const whereClause = { id: campaignId };
 
     return this.reposity.updateCampaignStatus(whereClause, dto);
@@ -119,26 +120,28 @@ export class CampaignService {
 
   async updateCampaignKarma(
     dto: UpdateKarmaDto,
-    req: Request,
+    campaign: Campaign,
   ): Promise<CampaignResponseDto> {
-    const campaignId: string = req.campaign!.id;
+    const campaignId: string = campaign.id;
     const whereClause = { id: campaignId };
 
     return this.reposity.updateCampaignKarma(whereClause, dto);
   }
 
-  async softRemoveCampaign(req: Request): Promise<CampaignResponseDto> {
-    const campaignId: string = req.campaign!.id;
+  async softRemoveCampaign(campaign: Campaign): Promise<CampaignResponseDto> {
+    const campaignId: string = campaign.id;
     const whereClause = { id: campaignId };
     const data = { deletedAt: new Date() };
 
     return this.reposity.softRemoveCampaign(whereClause, data);
   }
 
-  async restoreSoftRemovedCampaign(req: Request): Promise<CampaignResponseDto> {
-    const campaignId: string = req.campaign!.id;
+  async restoreSoftRemovedCampaign(
+    campaign: Campaign,
+  ): Promise<CampaignResponseDto> {
+    const campaignId: string = campaign.id;
 
-    if (!req.campaign!.deletedAt) {
+    if (!campaign.deletedAt) {
       throw new BadRequestException('Campaign must be soft-deleted first');
     }
 
@@ -148,10 +151,10 @@ export class CampaignService {
     return this.reposity.restoreSoftRemovedCampaign(whereClause, data);
   }
 
-  async deleteCampaign(req: Request): Promise<CampaignResponseDto> {
-    const campaignId: string = req.campaign!.id;
+  async deleteCampaign(campaign: Campaign): Promise<CampaignResponseDto> {
+    const campaignId: string = campaign.id;
 
-    if (!req.campaign!.deletedAt) {
+    if (!campaign.deletedAt) {
       throw new BadRequestException('Campaign must be soft-deleted first');
     }
 

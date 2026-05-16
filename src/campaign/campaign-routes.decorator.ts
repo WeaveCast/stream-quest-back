@@ -1,7 +1,7 @@
 import { applyDecorators, UseGuards } from '@nestjs/common';
 import { CampaignFilterStatus } from '../dto/campaign/campagn-filter.dto';
 import { CampaignResponseDto } from '../dto/campaign/campaign-response.dto';
-import { ApiAuthRoute } from './api-auth.decorator';
+import { ApiAuthRoute } from '../decorators/api-auth.decorator';
 import { CampaignOwnershipGuard } from '../guards/campaign/campaign-ownership.guard';
 import {
   customErrorResponse,
