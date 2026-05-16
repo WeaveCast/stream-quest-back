@@ -81,9 +81,7 @@ export class CampaignService {
       ...dto,
     };
 
-    const test = this.reposity.createCampaign(data);
-    console.log(test);
-    return test;
+    return this.reposity.createCampaign(data);
   }
 
   async updateCampaign(
