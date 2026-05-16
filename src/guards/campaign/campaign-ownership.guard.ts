@@ -1,8 +1,10 @@
 import {
+  BadRequestException,
   CanActivate,
   ExecutionContext,
   ForbiddenException,
   Injectable,
+  NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { Request } from 'express';
@@ -21,15 +23,21 @@ export class CampaignOwnershipGuard implements CanActivate {
     }
 
     if (!campaignId) {
-      throw new ForbiddenException('Campaign id not provided');
+      throw new BadRequestException('Campaign id not provided');
     }
 
     const campaign = await this.prisma.campaign.findUnique({
-      where: { id: campaignId as string, gameMasterId: userId },
+      where: { id: campaignId as string },
     });
 
     if (!campaign) {
-      return false;
+      throw new NotFoundException('Campaign not found');
+    }
+
+    if (campaign.gameMasterId !== userId) {
+      throw new ForbiddenException(
+        'You do not have permission to access this campaign',
+      );
     }
 
     request.campaign = campaign;
