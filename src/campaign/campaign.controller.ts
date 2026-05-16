@@ -8,10 +8,8 @@ import {
   Post,
   Query,
   Req,
-  UseGuards,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { ApiAuthRoute } from '../decorators/api-auth.decorator';
 import type { Request } from 'express';
 import { CreateCampaignDto } from '../dto/campaign/create-campaign.dto';
 import { UpdateCampaignDto } from '../dto/campaign/update-campaign.dto';
@@ -19,11 +17,18 @@ import { UpdateStatusDto } from '../dto/campaign/update-status.dto';
 import { UpdateKarmaDto } from '../dto/campaign/update-karma.dto';
 import { CampaignService } from './campaign.service';
 import { CampaignResponseDto } from '../dto/campaign/campaign-response.dto';
+import { CampaignFilterDto } from '../dto/campaign/campagn-filter.dto';
 import {
-  CampaignFilterDto,
-  CampaignFilterStatus,
-} from '../dto/campaign/campagn-filter.dto';
-import { CampaignOwnershipGuard } from '../guards/campaign/campaign-ownership.guard';
+  CreateCampaignRoute,
+  DeleteCampaignFromTrashRoute,
+  GetCampaignDetailsRoute,
+  GetCampaignListRoute,
+  RestoreSoftRemovedCampaignRoute,
+  SoftRemoveCampaignRoute,
+  UpdateCampaignKarmaRoute,
+  UpdateCampaignRoute,
+  UpdateCampaignStatusRoute,
+} from '../decorators/campaign-routes.decorator';
 
 @ApiTags('Campaign')
 @Controller('campaign')
@@ -31,24 +36,7 @@ export class CampaignController {
   constructor(private readonly campaignService: CampaignService) {}
 
   @Get('')
-  @ApiAuthRoute("Get the user's list of campaigns", {
-    queries: [
-      {
-        name: 'status',
-        enum: CampaignFilterStatus,
-        description:
-          'Filter campaigns by deletion status (active, deleted, all)',
-        example: CampaignFilterStatus.ACTIVE,
-      },
-    ],
-    responses: [
-      {
-        status: 200,
-        description: 'Returns the list of campaigns of the logged user',
-        type: [CampaignResponseDto],
-      },
-    ],
-  })
+  @GetCampaignListRoute("Get user's campaigns")
   async campaignList(
     @Query() filterDto: CampaignFilterDto,
     @Req() req: Request,
@@ -57,22 +45,7 @@ export class CampaignController {
   }
 
   @Get(':id')
-  @ApiAuthRoute("Get a campaign's details", {
-    params: [
-      {
-        name: 'id',
-        description: 'Campaign id',
-        example: '550e8400-e29b-41d4-a716-446655440000',
-      },
-    ],
-    responses: [
-      {
-        status: 200,
-        description: "Returns a user's campaing from its id",
-        type: CampaignResponseDto,
-      },
-    ],
-  })
+  @GetCampaignDetailsRoute("Get a campaign's details")
   async campaignDetails(
     @Param('id') campaignId: string,
     @Req() req: Request,
@@ -81,15 +54,7 @@ export class CampaignController {
   }
 
   @Post('')
-  @ApiAuthRoute('Create a campaign', {
-    responses: [
-      {
-        status: 201,
-        description: 'Creates and returns the created campaign',
-        type: CampaignResponseDto,
-      },
-    ],
-  })
+  @CreateCampaignRoute('Create a campaign')
   async createCampaign(
     @Body() createDto: CreateCampaignDto,
     @Req() req: Request,
@@ -98,23 +63,7 @@ export class CampaignController {
   }
 
   @Patch(':id')
-  @ApiAuthRoute('Update a campaign', {
-    params: [
-      {
-        name: 'id',
-        description: 'Campaign id',
-        example: '550e8400-e29b-41d4-a716-446655440000',
-      },
-    ],
-    responses: [
-      {
-        status: 200,
-        description: 'Updates and returns the updated campaign',
-        type: CampaignResponseDto,
-      },
-    ],
-  })
-  @UseGuards(CampaignOwnershipGuard)
+  @UpdateCampaignRoute('Update a campaign')
   async updateCampaign(
     @Body() updateDto: UpdateCampaignDto,
     @Req() req: Request,
@@ -123,24 +72,7 @@ export class CampaignController {
   }
 
   @Patch(':id/status')
-  @ApiAuthRoute('Update the status of a campaign', {
-    params: [
-      {
-        name: 'id',
-        description: 'Campaign id',
-        example: '550e8400-e29b-41d4-a716-446655440000',
-      },
-    ],
-    responses: [
-      {
-        status: 200,
-        description:
-          'Updates the status of a campaign and returns the updated campaign',
-        type: CampaignResponseDto,
-      },
-    ],
-  })
-  @UseGuards(CampaignOwnershipGuard)
+  @UpdateCampaignStatusRoute('Update the status of a campaign')
   async updateCampaignStatus(
     @Body() updateDto: UpdateStatusDto,
     @Req() req: Request,
@@ -149,24 +81,7 @@ export class CampaignController {
   }
 
   @Patch(':id/karma')
-  @ApiAuthRoute('Update the karma of a campaign', {
-    params: [
-      {
-        name: 'id',
-        description: 'Campaign id',
-        example: '550e8400-e29b-41d4-a716-446655440000',
-      },
-    ],
-    responses: [
-      {
-        status: 200,
-        description:
-          'Updates the karma of a campaign and returns the updated campaign',
-        type: CampaignResponseDto,
-      },
-    ],
-  })
-  @UseGuards(CampaignOwnershipGuard)
+  @UpdateCampaignKarmaRoute('Update the karma of a campaign')
   async updateCampaignKarma(
     @Body() updateDto: UpdateKarmaDto,
     @Req() req: Request,
@@ -175,45 +90,13 @@ export class CampaignController {
   }
 
   @Delete(':id')
-  @ApiAuthRoute('Temporary remove a campaign', {
-    params: [
-      {
-        name: 'id',
-        description: 'Campaign id',
-        example: '550e8400-e29b-41d4-a716-446655440000',
-      },
-    ],
-    responses: [
-      {
-        status: 200,
-        description: 'Soft remove a campaign',
-        type: CampaignResponseDto,
-      },
-    ],
-  })
-  @UseGuards(CampaignOwnershipGuard)
+  @SoftRemoveCampaignRoute('Temporary remove a campaign')
   async softRemoveCampaign(@Req() req: Request): Promise<CampaignResponseDto> {
     return this.campaignService.softRemoveCampaign(req);
   }
 
   @Patch(':id/restore')
-  @ApiAuthRoute('Restore a removed campaign', {
-    params: [
-      {
-        name: 'id',
-        description: 'Campaign id',
-        example: '550e8400-e29b-41d4-a716-446655440000',
-      },
-    ],
-    responses: [
-      {
-        status: 200,
-        description: 'Restore a campaign that has been soft removed',
-        type: CampaignResponseDto,
-      },
-    ],
-  })
-  @UseGuards(CampaignOwnershipGuard)
+  @RestoreSoftRemovedCampaignRoute('Restore a removed campaign')
   async restoreSoftRemovedCampaign(
     @Req() req: Request,
   ): Promise<CampaignResponseDto> {
@@ -221,23 +104,7 @@ export class CampaignController {
   }
 
   @Delete(':id/permanent')
-  @ApiAuthRoute('Permanently delete a campaign', {
-    params: [
-      {
-        name: 'id',
-        description: 'Campaign id',
-        example: '550e8400-e29b-41d4-a716-446655440000',
-      },
-    ],
-    responses: [
-      {
-        status: 200,
-        description: 'Permanently delete a campaign that has been soft removed',
-        type: CampaignResponseDto,
-      },
-    ],
-  })
-  @UseGuards(CampaignOwnershipGuard)
+  @DeleteCampaignFromTrashRoute('Permanently delete a campaign')
   async deleteCampaignFromTrash(
     @Req() req: Request,
   ): Promise<CampaignResponseDto> {

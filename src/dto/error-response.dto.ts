@@ -8,7 +8,7 @@ export class ErrorResponseDto {
     example: 'Internal server error',
     description: 'Error message',
   })
-  message: string;
+  message: string | string[];
 }
 
 export class UnauthorizedResponseDto {
