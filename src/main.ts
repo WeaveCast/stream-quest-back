@@ -3,10 +3,14 @@ import { AppModule } from './app.module';
 import cookieParser from 'cookie-parser';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
+import { PrismaExceptionFilter } from './filters/prisma-exception.filter';
+import { AllExceptionsFilter } from './filters/all-exceptions.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.use(cookieParser(process.env.COOKIE_SECRET));
+
+  app.useGlobalFilters(new PrismaExceptionFilter(), new AllExceptionsFilter());
 
   app.useGlobalPipes(
     new ValidationPipe({
