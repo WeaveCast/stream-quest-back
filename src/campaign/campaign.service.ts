@@ -3,36 +3,34 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
 import { CreateCampaignDto } from '../dto/campaign/create-campaign.dto';
 import { CampaignResponseDto } from '../dto/campaign/campaign-response.dto';
 import { UpdateCampaignDto } from '../dto/campaign/update-campaign.dto';
 import { UpdateStatusDto } from '../dto/campaign/update-status.dto';
 import { UpdateKarmaDto } from '../dto/campaign/update-karma.dto';
 import {
-  CampaignFilterDto,
   CampaignFilterStatus,
-} from '../dto/campaign/campagn-filter.dto';
-import { Campaign, Prisma } from '../generated/prisma/client';
+  CampaignQueryDto,
+} from '../dto/campaign/campaign-query.dto';
 import { CampaignRepository } from './campaign.repository';
 import { JwtPayloadInterface } from '../interfaces/auth.interface';
+import { PaginationResponseDto } from '../dto/pagination-response.dto';
+import { CampaignWhereInput } from '../generated/prisma/models';
+import { Campaign } from '../generated/prisma/client';
 
 @Injectable()
 export class CampaignService {
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly reposity: CampaignRepository,
-  ) {}
+  constructor(private readonly reposity: CampaignRepository) {}
 
   async getCampaignList(
     user: JwtPayloadInterface,
-    filterDto: CampaignFilterDto,
-  ): Promise<CampaignResponseDto[]> {
-    const whereClause: Prisma.CampaignWhereInput = {
+    queryDto: CampaignQueryDto,
+  ): Promise<PaginationResponseDto<CampaignResponseDto>> {
+    const whereClause: CampaignWhereInput = {
       gameMasterId: user.sub,
     };
 
-    switch (filterDto.status) {
+    switch (queryDto.status) {
       case CampaignFilterStatus.ACTIVE:
         whereClause.deletedAt = null;
         break;
@@ -43,7 +41,24 @@ export class CampaignService {
         break;
     }
 
-    return this.reposity.getCampaignList(whereClause);
+    const limit = queryDto.limit || 10;
+    const campaigns = await this.reposity.getCampaignList(whereClause, {
+      take: limit + 1,
+      cursor: queryDto.cursor,
+      direction: queryDto.direction,
+      orderBy: { createdAt: 'desc' },
+    });
+    const hasMore = campaigns.length > limit;
+    const data = hasMore ? campaigns.slice(0, limit) : campaigns;
+
+    return {
+      data,
+      nextCursor: hasMore ? data[data.length - 1].id : null,
+      previousCursor: data.length > 0 ? data[0].id : null,
+      count: data.length,
+      hasMore,
+      hasPrevious: !!queryDto.cursor,
+    };
   }
 
   async getCampaign(

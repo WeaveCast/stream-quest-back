@@ -1,12 +1,13 @@
 import { Injectable } from '@nestjs/common';
-import { CampaignResponseDto } from '../dto/campaign/campaign-response.dto';
 import {
   CampaignCreateInput,
+  CampaignOrderByWithRelationInput,
   CampaignUpdateInput,
   CampaignWhereInput,
   CampaignWhereUniqueInput,
 } from '../generated/prisma/models';
 import { PrismaService } from '../prisma/prisma.service';
+import { Campaign } from '../generated/prisma/client';
 
 @Injectable()
 export class CampaignRepository {
@@ -14,9 +15,24 @@ export class CampaignRepository {
 
   async getCampaignList(
     where: CampaignWhereInput,
-  ): Promise<CampaignResponseDto[]> {
-    return this.prisma.campaign.findMany({
-      where: where,
+    options?: {
+      take?: number;
+      cursor?: string;
+      direction?: 'forward' | 'backward';
+      orderBy?: CampaignOrderByWithRelationInput;
+    },
+  ): Promise<Campaign[]> {
+    const isBackward = options?.direction === 'backward';
+    const take = options?.take || 10;
+
+    const result = (await this.prisma.campaign.findMany({
+      where,
+      take: isBackward ? -take : take,
+      ...(options?.cursor && {
+        skip: 1,
+        cursor: { id: options.cursor },
+      }),
+      orderBy: options?.orderBy || { createdAt: 'desc' },
       include: {
         _count: {
           select: {
@@ -25,12 +41,12 @@ export class CampaignRepository {
           },
         },
       },
-    });
+    })) as Campaign[];
+
+    return isBackward ? result.reverse() : result;
   }
 
-  async getCampaign(
-    where: CampaignWhereInput,
-  ): Promise<CampaignResponseDto | null> {
+  async getCampaign(where: CampaignWhereInput): Promise<Campaign | null> {
     return this.prisma.campaign.findFirst({
       where,
       include: {
@@ -44,9 +60,7 @@ export class CampaignRepository {
     });
   }
 
-  async createCampaign(
-    data: CampaignCreateInput,
-  ): Promise<CampaignResponseDto> {
+  async createCampaign(data: CampaignCreateInput): Promise<Campaign> {
     return this.prisma.campaign.create({
       data,
     });
@@ -55,7 +69,7 @@ export class CampaignRepository {
   async updateCampaign(
     where: CampaignWhereUniqueInput,
     data: CampaignUpdateInput,
-  ): Promise<CampaignResponseDto> {
+  ): Promise<Campaign> {
     return this.prisma.campaign.update({
       where,
       data,
@@ -73,7 +87,7 @@ export class CampaignRepository {
   async updateCampaignStatus(
     where: CampaignWhereUniqueInput,
     data: CampaignUpdateInput,
-  ): Promise<CampaignResponseDto> {
+  ): Promise<Campaign> {
     return this.prisma.campaign.update({
       where,
       data,
@@ -91,7 +105,7 @@ export class CampaignRepository {
   async updateCampaignKarma(
     where: CampaignWhereUniqueInput,
     data: CampaignUpdateInput,
-  ): Promise<CampaignResponseDto> {
+  ): Promise<Campaign> {
     return this.prisma.campaign.update({
       where,
       data,
@@ -109,7 +123,7 @@ export class CampaignRepository {
   async softRemoveCampaign(
     where: CampaignWhereUniqueInput,
     data: CampaignUpdateInput,
-  ): Promise<CampaignResponseDto> {
+  ): Promise<Campaign> {
     return this.prisma.campaign.update({
       where,
       data,
@@ -127,7 +141,7 @@ export class CampaignRepository {
   async restoreSoftRemovedCampaign(
     where: CampaignWhereUniqueInput,
     data: CampaignUpdateInput,
-  ): Promise<CampaignResponseDto> {
+  ): Promise<Campaign> {
     return this.prisma.campaign.update({
       where,
       data,
@@ -142,9 +156,7 @@ export class CampaignRepository {
     });
   }
 
-  async deleteCampaign(
-    where: CampaignWhereUniqueInput,
-  ): Promise<CampaignResponseDto> {
+  async deleteCampaign(where: CampaignWhereUniqueInput): Promise<Campaign> {
     return this.prisma.campaign.delete({
       where,
     });

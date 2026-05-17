@@ -15,7 +15,7 @@ import { UpdateStatusDto } from '../dto/campaign/update-status.dto';
 import { UpdateKarmaDto } from '../dto/campaign/update-karma.dto';
 import { CampaignService } from './campaign.service';
 import { CampaignResponseDto } from '../dto/campaign/campaign-response.dto';
-import { CampaignFilterDto } from '../dto/campaign/campagn-filter.dto';
+import { CampaignQueryDto } from '../dto/campaign/campaign-query.dto';
 import {
   CreateCampaignRoute,
   DeleteCampaignFromTrashRoute,
@@ -31,6 +31,7 @@ import type { JwtPayloadInterface } from '../interfaces/auth.interface';
 import { UserContext } from '../decorators/user.decorator';
 import { CampaignContext } from './campaign.decorator';
 import type { Campaign } from '../generated/prisma/client';
+import { PaginationResponseDto } from '../dto/pagination-response.dto';
 
 @ApiTags('Campaign')
 @Controller('campaign')
@@ -40,9 +41,9 @@ export class CampaignController {
   @Get('')
   @GetCampaignListRoute("Get user's campaigns")
   async campaignList(
-    @Query() filterDto: CampaignFilterDto,
+    @Query() filterDto: CampaignQueryDto,
     @UserContext() user: JwtPayloadInterface,
-  ): Promise<CampaignResponseDto[]> {
+  ): Promise<PaginationResponseDto<CampaignResponseDto>> {
     return this.campaignService.getCampaignList(user, filterDto);
   }
 

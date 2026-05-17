@@ -1,5 +1,5 @@
 import { applyDecorators, UseGuards } from '@nestjs/common';
-import { CampaignFilterStatus } from '../dto/campaign/campagn-filter.dto';
+import { CampaignFilterStatus } from '../dto/campaign/campaign-query.dto';
 import { CampaignResponseDto } from '../dto/campaign/campaign-response.dto';
 import { ApiAuthRoute } from '../decorators/api-auth.decorator';
 import { CampaignOwnershipGuard } from '../guards/campaign/campaign-ownership.guard';
