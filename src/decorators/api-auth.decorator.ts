@@ -2,20 +2,24 @@ import { applyDecorators, UseGuards } from '@nestjs/common';
 import {
   ApiCookieAuth,
   ApiOperation,
+  ApiParam,
+  ApiParamOptions,
   ApiQuery,
   ApiQueryOptions,
   ApiResponse,
   ApiResponseOptions,
 } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { JwtAuthGuard } from '../guards/auth/jwt-auth.guard';
 import {
   ErrorResponseDto,
   UnauthorizedResponseDto,
 } from '../dto/error-response.dto';
+import { Public } from './public.decorator';
 
 interface ApiPublicRouteOptions {
   responses?: ApiResponseOptions[];
   queries?: ApiQueryOptions[];
+  params?: ApiParamOptions[];
 }
 
 export function ApiAuthRoute(
@@ -27,6 +31,7 @@ export function ApiAuthRoute(
     ApiCookieAuth(),
     ApiOperation({ summary }),
     ...(options.queries ?? []).map((q) => ApiQuery(q)),
+    ...(options.params ?? []).map((p) => ApiParam(p)),
     ApiResponse({
       status: 401,
       description: 'Unauthorized',
@@ -46,8 +51,10 @@ export function ApiPublicRoute(
   options: ApiPublicRouteOptions = {},
 ) {
   return applyDecorators(
+    Public(),
     ApiOperation({ summary }),
     ...(options.queries ?? []).map((q) => ApiQuery(q)),
+    ...(options.params ?? []).map((p) => ApiParam(p)),
     ApiResponse({
       status: 500,
       description: 'Internal server error',

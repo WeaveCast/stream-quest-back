@@ -101,6 +101,7 @@ model Campaign {
   blessingThreshold       Int
   createdAt               DateTime            @default(now())
   updatedAt               DateTime            @updatedAt
+  deletedAt               DateTime?
 
   gameMaster              User                @relation(fields: [gameMasterId], references: [id])
   gameMasterId            String
@@ -110,6 +111,10 @@ model Campaign {
   campaignEvents          CampaignEvent[]
   thresholdEvents         CampaignThresholdEvent[]
   viewerInteractions      ViewerInteraction[]
+
+  @@index([gameMasterId])
+  @@index([status])
+  @@index([deletedAt])
 }
 
 model Session {
@@ -128,6 +133,9 @@ model Session {
   sessionEvents           SessionEvent[]
   sessionPlayers          SessionPlayerCharacter[]
   viewerInteractions      ViewerInteraction[]
+
+  @@index([campaignId])
+  @@index([status])
 }
 
 model ContextSnapshot {
@@ -151,6 +159,9 @@ model KarmaEvent {
   sessionId               String
   campaign                Campaign            @relation(fields: [campaignId], references: [id])
   campaignId              String
+
+  @@index([campaignId, occurredAt])
+  @@index([sessionId, occurredAt])
 }
 
 model PlayerCharacter {
@@ -169,6 +180,9 @@ model PlayerCharacter {
   campaign                Campaign            @relation(fields: [campaignId], references: [id])
   campaignId              String
   sessionPlayers          SessionPlayerCharacter[]
+
+  @@index([campaignId])
+  @@index([isAlive])
 }
 
 model SessionPlayerCharacter {
@@ -213,6 +227,9 @@ model Event {
   campaignEvents          CampaignEvent[]
   thresholdEvents         CampaignThresholdEvent[]
   sessionEvents           SessionEvent[]
+
+  @@index([gameMasterId])
+  @@index([eventTypeId])
 }
 
 model Rule {
@@ -226,6 +243,9 @@ model Rule {
   
   event                   Event               @relation(fields: [eventId], references: [id])
   eventId                 String
+
+  @@index([eventId])
+  @@index([isActive])
 }
 
 model Resolution {
@@ -275,6 +295,10 @@ model CampaignEvent {
   campaignId              String
   event                   Event               @relation(fields: [eventId], references: [id])
   eventId                 String
+
+  @@index([campaignId])
+  @@index([eventId])
+  @@index([isActive])
 }
 
 model CampaignThresholdEvent {
@@ -303,6 +327,9 @@ model SessionEvent {
   chosenResolutionId      String?
   sessionEventResolutions SessionEventResolution[]
   viewerInteractions      ViewerInteraction[]
+
+  @@index([sessionId])
+  @@index([status])  
 }
 
 model SessionEventResolution {
@@ -328,4 +355,9 @@ model ViewerInteraction {
   sessionId               String
   campaign                Campaign            @relation(fields: [campaignId], references: [id])
   campaignId              String
+
+  @@index([campaignId])
+  @@index([sessionId])
+  @@index([twitchUserId])
+  @@index([interactedAt]) 
 }
