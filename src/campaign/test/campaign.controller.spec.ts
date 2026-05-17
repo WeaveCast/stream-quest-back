@@ -160,28 +160,54 @@ describe('CampaignController', () => {
   });
 
   describe('updateCampaignStatus', () => {
-    it('should update campaign status', async () => {
-      const statusDto = {
-        status: CampaignStatus.PAUSED,
-        conclusion: ConclusionType.ABANDONNED,
-      };
-      const updatedCampaign = createMockCampaign({
-        status: CampaignStatus.PAUSED,
+    describe('updateCampaignStatus', () => {
+      it('should update campaign status without conclusion', async () => {
+        const statusDto = {
+          status: CampaignStatus.PAUSED,
+        };
+        const updatedCampaign = createMockCampaign({
+          status: CampaignStatus.PAUSED,
+        });
+        jest
+          .spyOn(service, 'updateCampaignStatus')
+          .mockResolvedValue(updatedCampaign);
+
+        const result = await controller.updateCampaignStatus(
+          statusDto,
+          mockCampaign,
+        );
+
+        expect(result).toEqual(updatedCampaign);
+        expect(service.updateCampaignStatus).toHaveBeenCalledWith(
+          statusDto,
+          mockCampaign,
+        );
       });
-      jest
-        .spyOn(service, 'updateCampaignStatus')
-        .mockResolvedValue(updatedCampaign);
 
-      const result = await controller.updateCampaignStatus(
-        statusDto,
-        mockCampaign,
-      );
+      it('should update campaign status with conclusion', async () => {
+        const statusDto = {
+          status: CampaignStatus.ENDED,
+          conclusion: ConclusionType.VICTORY,
+        };
+        const updatedCampaign = createMockCampaign({
+          status: CampaignStatus.ENDED,
+          conclusion: ConclusionType.VICTORY,
+        });
+        jest
+          .spyOn(service, 'updateCampaignStatus')
+          .mockResolvedValue(updatedCampaign);
 
-      expect(result).toEqual(updatedCampaign);
-      expect(service.updateCampaignStatus).toHaveBeenCalledWith(
-        statusDto,
-        mockCampaign,
-      );
+        const result = await controller.updateCampaignStatus(
+          statusDto,
+          mockCampaign,
+        );
+
+        expect(result).toEqual(updatedCampaign);
+        expect(service.updateCampaignStatus).toHaveBeenCalledWith(
+          statusDto,
+          mockCampaign,
+        );
+      });
     });
   });
 

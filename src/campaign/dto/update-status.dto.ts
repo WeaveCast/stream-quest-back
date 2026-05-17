@@ -18,5 +18,5 @@ export class UpdateStatusDto {
   })
   @IsEnum(ConclusionType)
   @IsOptional()
-  conclusion: ConclusionType;
+  conclusion?: ConclusionType;
 }

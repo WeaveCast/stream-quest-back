@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { CampaignService } from '../campaign.service';
 import { CampaignRepository } from '../campaign.repository';
-import { CampaignStatus, ConclusionType } from '../../generated/prisma/client';
+import { CampaignStatus } from '../../generated/prisma/client';
 import { CampaignFilterStatus } from '../dto/campaign-query.dto';
 import {
   createMockCampaign,
@@ -235,7 +235,6 @@ describe('CampaignService', () => {
 
       const dto = {
         status: CampaignStatus.PAUSED,
-        conclusion: ConclusionType.ABANDONNED,
       };
 
       const result = await service.updateCampaignStatus(dto, mockCampaign);
