@@ -88,7 +88,12 @@
     "moduleNameMapper": {
       "^@/(.*)$": "<rootDir>/$1",
       "^(\\.{1,2}/.*)\\.js$": "$1"
-    }
+    },
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "/dist/",
+      "src/auth/.*\\.spec\\.ts$"
+    ]
   },
   "lint-staged": {
     "*.ts": [

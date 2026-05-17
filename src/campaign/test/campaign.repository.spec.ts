@@ -1,23 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { BadRequestException, NotFoundException } from '@nestjs/common';
-import { CampaignService } from '../campaign.service';
 import { CampaignRepository } from '../campaign.repository';
-import {
-  Campaign,
-  CampaignStatus,
-  ConclusionType,
-} from '../../generated/prisma/client';
-import { JwtPayloadInterface } from '../../interfaces/auth.interface';
-import { CampaignFilterStatus } from '../dto/campaign-query.dto';
+import { PrismaService } from '../../prisma/prisma.service';
+import { Campaign, CampaignStatus } from '../../generated/prisma/client';
 
-describe('CampaignService', () => {
-  let service: CampaignService;
+describe('CampaignRepository', () => {
   let repository: CampaignRepository;
-
-  const mockUser: JwtPayloadInterface = {
-    sub: 'user-123',
-    username: 'testuser',
-  };
+  let prismaService: PrismaService;
 
   const mockCampaign: Campaign = {
     id: 'campaign-123',
@@ -31,338 +19,200 @@ describe('CampaignService', () => {
     createdAt: new Date('2024-01-01'),
     updatedAt: new Date('2024-01-01'),
     deletedAt: null,
-    gameMasterId: 'user-123',
-  };
-
-  const mockRepository = {
-    getCampaignList: jest.fn(),
-    getCampaign: jest.fn(),
-    createCampaign: jest.fn(),
-    updateCampaign: jest.fn(),
-    updateCampaignStatus: jest.fn(),
-    updateCampaignKarma: jest.fn(),
-    softRemoveCampaign: jest.fn(),
-    restoreSoftRemovedCampaign: jest.fn(),
-    deleteCampaign: jest.fn(),
+    gameMasterId: 'gm-123',
   };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
-        CampaignService,
+        CampaignRepository,
         {
-          provide: CampaignRepository,
-          useValue: mockRepository,
+          provide: PrismaService,
+          useValue: {
+            campaign: {
+              findMany: jest.fn(),
+              findFirst: jest.fn(),
+              create: jest.fn(),
+              update: jest.fn(),
+              delete: jest.fn(),
+            },
+          },
         },
       ],
     }).compile();
 
-    service = module.get(CampaignService);
     repository = module.get(CampaignRepository);
+    prismaService = module.get(PrismaService);
 
     jest.clearAllMocks();
   });
 
-  describe('getCampaignList', () => {
-    it('should return paginated campaign list with active filter', async () => {
-      const mockCampaigns = [
-        { ...mockCampaign, id: 'campaign-1' },
-        { ...mockCampaign, id: 'campaign-2' },
-      ];
+  describe('getCampaign', () => {
+    it('should return a campaign when found', async () => {
       jest
-        .spyOn(repository, 'getCampaignList')
-        .mockResolvedValue(mockCampaigns);
+        .spyOn(prismaService.campaign, 'findFirst')
+        .mockResolvedValue(mockCampaign);
 
-      const result = await service.getCampaignList(mockUser, {
-        status: CampaignFilterStatus.ACTIVE,
-        limit: 10,
+      const result = await repository.getCampaign({ id: 'campaign-123' });
+
+      expect(result).toEqual(mockCampaign);
+      expect(prismaService.campaign.findFirst).toHaveBeenCalledWith({
+        where: { id: 'campaign-123' },
+        include: {
+          _count: {
+            select: {
+              sessions: true,
+              campaignEvents: true,
+            },
+          },
+        },
       });
-
-      expect(result.data).toEqual(mockCampaigns);
-      expect(result.count).toBe(2);
-      expect(result.hasMore).toBe(false);
-      expect(repository.getCampaignList).toHaveBeenCalledWith(
-        { gameMasterId: 'user-123', deletedAt: null },
-        expect.objectContaining({ take: 11 }),
-      );
     });
 
-    it('should return paginated list with deleted filter', async () => {
-      jest.spyOn(repository, 'getCampaignList').mockResolvedValue([]);
+    it('should return null when campaign not found', async () => {
+      jest.spyOn(prismaService.campaign, 'findFirst').mockResolvedValue(null);
 
-      await service.getCampaignList(mockUser, {
-        status: CampaignFilterStatus.DELETED,
-        limit: 10,
-      });
+      const result = await repository.getCampaign({ id: 'not-found' });
 
-      expect(repository.getCampaignList).toHaveBeenCalledWith(
-        { gameMasterId: 'user-123', deletedAt: { not: null } },
-        expect.anything(),
-      );
-    });
-
-    it('should detect hasMore when results exceed limit', async () => {
-      const mockCampaigns = Array.from({ length: 11 }, (_, i) => ({
-        ...mockCampaign,
-        id: `campaign-${i}`,
-      }));
-      jest
-        .spyOn(repository, 'getCampaignList')
-        .mockResolvedValue(mockCampaigns);
-
-      const result = await service.getCampaignList(mockUser, { limit: 10 });
-
-      expect(result.data.length).toBe(10);
-      expect(result.hasMore).toBe(true);
-      expect(result.nextCursor).toBe('campaign-9');
-    });
-
-    it('should set hasPrevious when cursor is present', async () => {
-      jest
-        .spyOn(repository, 'getCampaignList')
-        .mockResolvedValue([mockCampaign]);
-
-      const result = await service.getCampaignList(mockUser, {
-        cursor: 'some-cursor',
-        limit: 10,
-      });
-
-      expect(result.hasPrevious).toBe(true);
+      expect(result).toBeNull();
     });
   });
 
-  describe('getCampaign', () => {
-    it('should return a campaign when found', async () => {
-      jest.spyOn(repository, 'getCampaign').mockResolvedValue(mockCampaign);
+  describe('getCampaignList', () => {
+    const mockCampaigns = [
+      { ...mockCampaign, id: 'campaign-1', title: 'Campaign 1' },
+      { ...mockCampaign, id: 'campaign-2', title: 'Campaign 2' },
+    ];
 
-      const result = await service.getCampaign('campaign-123', mockUser);
+    it('should return campaigns in forward direction', async () => {
+      jest
+        .spyOn(prismaService.campaign, 'findMany')
+        .mockResolvedValue(mockCampaigns);
 
-      expect(result).toEqual(mockCampaign);
-      expect(repository.getCampaign).toHaveBeenCalledWith({
-        id: 'campaign-123',
-        gameMasterId: 'user-123',
+      const result = await repository.getCampaignList(
+        { gameMasterId: 'gm-123' },
+        { take: 10, direction: 'forward' },
+      );
+
+      expect(result).toEqual(mockCampaigns);
+      expect(prismaService.campaign.findMany).toHaveBeenCalledWith({
+        where: { gameMasterId: 'gm-123' },
+        take: 10,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          _count: {
+            select: {
+              sessions: true,
+              campaignEvents: true,
+            },
+          },
+        },
       });
     });
 
-    it('should throw NotFoundException when campaign not found', async () => {
-      jest.spyOn(repository, 'getCampaign').mockResolvedValue(null);
+    it('should return campaigns in backward direction (reversed)', async () => {
+      jest
+        .spyOn(prismaService.campaign, 'findMany')
+        .mockResolvedValue([...mockCampaigns]);
 
-      await expect(service.getCampaign('not-found', mockUser)).rejects.toThrow(
-        NotFoundException,
+      const result = await repository.getCampaignList(
+        { gameMasterId: 'gm-123' },
+        { take: 10, direction: 'backward', cursor: 'cursor-123' },
       );
+
+      expect(result).toEqual([...mockCampaigns].reverse());
+      expect(prismaService.campaign.findMany).toHaveBeenCalledWith({
+        where: { gameMasterId: 'gm-123' },
+        take: -10,
+        skip: 1,
+        cursor: { id: 'cursor-123' },
+        orderBy: { createdAt: 'desc' },
+        include: {
+          _count: {
+            select: {
+              sessions: true,
+              campaignEvents: true,
+            },
+          },
+        },
+      });
     });
 
-    it('should throw BadRequestException when id is missing', async () => {
-      await expect(service.getCampaign('', mockUser)).rejects.toThrow(
-        BadRequestException,
+    it('should use default take value of 10', async () => {
+      jest
+        .spyOn(prismaService.campaign, 'findMany')
+        .mockResolvedValue(mockCampaigns);
+
+      await repository.getCampaignList({ gameMasterId: 'gm-123' });
+
+      expect(prismaService.campaign.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ take: 10 }),
       );
     });
   });
 
   describe('createCampaign', () => {
-    it('should create a campaign with valid thresholds', async () => {
-      jest.spyOn(repository, 'createCampaign').mockResolvedValue(mockCampaign);
+    it('should create and return a campaign', async () => {
+      jest
+        .spyOn(prismaService.campaign, 'create')
+        .mockResolvedValue(mockCampaign);
 
-      const dto = {
+      const createData = {
         title: 'New Campaign',
         chaosThreshold: 50,
         blessingThreshold: 100,
+        gameMaster: { connect: { id: 'gm-123' } },
       };
 
-      const result = await service.createCampaign(dto, mockUser);
+      const result = await repository.createCampaign(createData);
 
       expect(result).toEqual(mockCampaign);
-      expect(repository.createCampaign).toHaveBeenCalledWith({
-        gameMaster: { connect: { id: 'user-123' } },
-        ...dto,
+      expect(prismaService.campaign.create).toHaveBeenCalledWith({
+        data: createData,
       });
-    });
-
-    it('should throw BadRequestException when chaos >= blessing', async () => {
-      const dto = {
-        title: 'Invalid Campaign',
-        chaosThreshold: 100,
-        blessingThreshold: 50,
-      };
-
-      await expect(service.createCampaign(dto, mockUser)).rejects.toThrow(
-        BadRequestException,
-      );
-      await expect(service.createCampaign(dto, mockUser)).rejects.toThrow(
-        'Chaos threshold must be less than Blessing threshold',
-      );
-    });
-
-    it('should throw BadRequestException when thresholds are equal', async () => {
-      const dto = {
-        title: 'Invalid Campaign',
-        chaosThreshold: 100,
-        blessingThreshold: 100,
-      };
-
-      await expect(service.createCampaign(dto, mockUser)).rejects.toThrow(
-        BadRequestException,
-      );
     });
   });
 
   describe('updateCampaign', () => {
-    it('should update campaign with valid thresholds', async () => {
+    it('should update and return a campaign', async () => {
       const updatedCampaign = { ...mockCampaign, title: 'Updated Title' };
       jest
-        .spyOn(repository, 'updateCampaign')
+        .spyOn(prismaService.campaign, 'update')
         .mockResolvedValue(updatedCampaign);
 
-      const dto = { title: 'Updated Title' };
-
-      const result = await service.updateCampaign(dto, mockCampaign);
+      const result = await repository.updateCampaign(
+        { id: 'campaign-123' },
+        { title: 'Updated Title' },
+      );
 
       expect(result).toEqual(updatedCampaign);
-      expect(repository.updateCampaign).toHaveBeenCalledWith(
-        { id: 'campaign-123' },
-        dto,
-      );
-    });
-
-    it('should validate thresholds using existing values when not provided', async () => {
-      jest.spyOn(repository, 'updateCampaign').mockResolvedValue(mockCampaign);
-
-      const dto = { title: 'Updated Title' };
-
-      await service.updateCampaign(dto, mockCampaign);
-
-      // Should not throw (uses existing valid thresholds)
-      expect(repository.updateCampaign).toHaveBeenCalled();
-    });
-
-    it('should throw when updating chaosThreshold >= blessingThreshold', async () => {
-      const dto = { chaosThreshold: 150 };
-
-      await expect(service.updateCampaign(dto, mockCampaign)).rejects.toThrow(
-        BadRequestException,
-      );
-    });
-
-    it('should validate merged thresholds correctly', async () => {
-      jest.spyOn(repository, 'updateCampaign').mockResolvedValue(mockCampaign);
-
-      const dto = { chaosThreshold: 30 }; // Valid with existing blessing 100
-
-      await service.updateCampaign(dto, mockCampaign);
-
-      expect(repository.updateCampaign).toHaveBeenCalled();
-    });
-  });
-
-  describe('updateCampaignStatus', () => {
-    it('should update campaign status', async () => {
-      const updatedCampaign = {
-        ...mockCampaign,
-        status: CampaignStatus.PAUSED,
-      };
-      jest
-        .spyOn(repository, 'updateCampaignStatus')
-        .mockResolvedValue(updatedCampaign);
-
-      const dto = {
-        status: CampaignStatus.PAUSED,
-        conclusion: ConclusionType.ABANDONNED,
-      };
-
-      const result = await service.updateCampaignStatus(dto, mockCampaign);
-
-      expect(result).toEqual(updatedCampaign);
-      expect(repository.updateCampaignStatus).toHaveBeenCalledWith(
-        { id: 'campaign-123' },
-        dto,
-      );
-    });
-  });
-
-  describe('updateCampaignKarma', () => {
-    it('should update campaign karma', async () => {
-      const updatedCampaign = { ...mockCampaign, karmaValue: 10 };
-      jest
-        .spyOn(repository, 'updateCampaignKarma')
-        .mockResolvedValue(updatedCampaign);
-
-      const dto = { karmaValue: 10 };
-
-      const result = await service.updateCampaignKarma(dto, mockCampaign);
-
-      expect(result).toEqual(updatedCampaign);
-      expect(repository.updateCampaignKarma).toHaveBeenCalledWith(
-        { id: 'campaign-123' },
-        dto,
-      );
-    });
-  });
-
-  describe('softRemoveCampaign', () => {
-    it('should soft delete a campaign', async () => {
-      const deletedCampaign = { ...mockCampaign, deletedAt: new Date() };
-      jest
-        .spyOn(repository, 'softRemoveCampaign')
-        .mockResolvedValue(deletedCampaign);
-
-      const result = await service.softRemoveCampaign(mockCampaign);
-
-      expect(result).toEqual(deletedCampaign);
-      expect(repository.softRemoveCampaign).toHaveBeenCalledWith(
-        { id: 'campaign-123' },
-        expect.objectContaining({ deletedAt: expect.any(Date) }),
-      );
-    });
-  });
-
-  describe('restoreSoftRemovedCampaign', () => {
-    it('should restore a soft deleted campaign', async () => {
-      const deletedCampaign = { ...mockCampaign, deletedAt: new Date() };
-      jest
-        .spyOn(repository, 'restoreSoftRemovedCampaign')
-        .mockResolvedValue(mockCampaign);
-
-      const result = await service.restoreSoftRemovedCampaign(deletedCampaign);
-
-      expect(result).toEqual(mockCampaign);
-      expect(repository.restoreSoftRemovedCampaign).toHaveBeenCalledWith(
-        { id: 'campaign-123' },
-        { deletedAt: null },
-      );
-    });
-
-    it('should throw BadRequestException if campaign not soft deleted', async () => {
-      await expect(
-        service.restoreSoftRemovedCampaign(mockCampaign),
-      ).rejects.toThrow(BadRequestException);
-      await expect(
-        service.restoreSoftRemovedCampaign(mockCampaign),
-      ).rejects.toThrow('Campaign must be soft-deleted first');
+      expect(prismaService.campaign.update).toHaveBeenCalledWith({
+        where: { id: 'campaign-123' },
+        data: { title: 'Updated Title' },
+        include: {
+          _count: {
+            select: {
+              sessions: true,
+              campaignEvents: true,
+            },
+          },
+        },
+      });
     });
   });
 
   describe('deleteCampaign', () => {
-    it('should permanently delete a soft deleted campaign', async () => {
-      const deletedCampaign = { ...mockCampaign, deletedAt: new Date() };
+    it('should delete and return a campaign', async () => {
       jest
-        .spyOn(repository, 'deleteCampaign')
-        .mockResolvedValue(deletedCampaign);
+        .spyOn(prismaService.campaign, 'delete')
+        .mockResolvedValue(mockCampaign);
 
-      const result = await service.deleteCampaign(deletedCampaign);
+      const result = await repository.deleteCampaign({ id: 'campaign-123' });
 
-      expect(result).toEqual(deletedCampaign);
-      expect(repository.deleteCampaign).toHaveBeenCalledWith({
-        id: 'campaign-123',
+      expect(result).toEqual(mockCampaign);
+      expect(prismaService.campaign.delete).toHaveBeenCalledWith({
+        where: { id: 'campaign-123' },
       });
-    });
-
-    it('should throw BadRequestException if campaign not soft deleted', async () => {
-      await expect(service.deleteCampaign(mockCampaign)).rejects.toThrow(
-        BadRequestException,
-      );
-      await expect(service.deleteCampaign(mockCampaign)).rejects.toThrow(
-        'Campaign must be soft-deleted first',
-      );
     });
   });
 });
