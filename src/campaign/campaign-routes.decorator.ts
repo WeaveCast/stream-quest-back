@@ -36,8 +36,7 @@ export function GetCampaignListRoute(summary: string) {
       {
         name: 'status',
         enum: CampaignFilterStatus,
-        description:
-          'Filter campaigns by deletion status (active, deleted, all)',
+        description: 'Filter campaigns by status (active, deleted, all)',
         example: CampaignFilterStatus.ACTIVE,
       },
     ],
