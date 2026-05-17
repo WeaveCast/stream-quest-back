@@ -104,20 +104,12 @@ export class CampaignService {
     dto: UpdateCampaignDto,
     campaign: Campaign,
   ): Promise<CampaignResponseDto> {
+    this.validateThresholds({
+      chaosThreshold: dto.chaosThreshold ?? campaign.chaosThreshold,
+      blessingThreshold: dto.blessingThreshold ?? campaign.blessingThreshold,
+    });
+
     const campaignId: string = campaign.id;
-
-    const chaosThreshold =
-      dto.chaosThreshold !== undefined
-        ? dto.chaosThreshold
-        : campaign.chaosThreshold;
-
-    const blessingThreshold =
-      dto.blessingThreshold !== undefined
-        ? dto.blessingThreshold
-        : campaign.blessingThreshold;
-
-    this.validateThresholds({ chaosThreshold, blessingThreshold });
-
     const whereClause = { id: campaignId };
 
     return this.reposity.updateCampaign(whereClause, dto);
@@ -154,12 +146,11 @@ export class CampaignService {
   async restoreSoftRemovedCampaign(
     campaign: Campaign,
   ): Promise<CampaignResponseDto> {
-    const campaignId: string = campaign.id;
-
     if (!campaign.deletedAt) {
       throw new BadRequestException('Campaign must be soft-deleted first');
     }
 
+    const campaignId: string = campaign.id;
     const whereClause = { id: campaignId };
     const data = { deletedAt: null };
 
@@ -167,12 +158,11 @@ export class CampaignService {
   }
 
   async deleteCampaign(campaign: Campaign): Promise<CampaignResponseDto> {
-    const campaignId: string = campaign.id;
-
     if (!campaign.deletedAt) {
       throw new BadRequestException('Campaign must be soft-deleted first');
     }
 
+    const campaignId: string = campaign.id;
     const whereClause = { id: campaignId };
 
     return this.reposity.deleteCampaign(whereClause);
