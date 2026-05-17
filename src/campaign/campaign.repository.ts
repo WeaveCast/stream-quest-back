@@ -70,75 +70,44 @@ export class CampaignRepository {
     where: CampaignWhereUniqueInput,
     data: CampaignUpdateInput,
   ): Promise<Campaign> {
-    return this.prisma.campaign.update({
-      where,
-      data,
-      include: {
-        _count: {
-          select: {
-            sessions: true,
-            campaignEvents: true,
-          },
-        },
-      },
-    });
+    return this.prismaUpdate(where, data);
   }
 
   async updateCampaignStatus(
     where: CampaignWhereUniqueInput,
     data: CampaignUpdateInput,
   ): Promise<Campaign> {
-    return this.prisma.campaign.update({
-      where,
-      data,
-      include: {
-        _count: {
-          select: {
-            sessions: true,
-            campaignEvents: true,
-          },
-        },
-      },
-    });
+    return this.prismaUpdate(where, data);
   }
 
   async updateCampaignKarma(
     where: CampaignWhereUniqueInput,
     data: CampaignUpdateInput,
   ): Promise<Campaign> {
-    return this.prisma.campaign.update({
-      where,
-      data,
-      include: {
-        _count: {
-          select: {
-            sessions: true,
-            campaignEvents: true,
-          },
-        },
-      },
-    });
+    return this.prismaUpdate(where, data);
   }
 
   async softRemoveCampaign(
     where: CampaignWhereUniqueInput,
     data: CampaignUpdateInput,
   ): Promise<Campaign> {
-    return this.prisma.campaign.update({
-      where,
-      data,
-      include: {
-        _count: {
-          select: {
-            sessions: true,
-            campaignEvents: true,
-          },
-        },
-      },
-    });
+    return this.prismaUpdate(where, data);
   }
 
   async restoreSoftRemovedCampaign(
+    where: CampaignWhereUniqueInput,
+    data: CampaignUpdateInput,
+  ): Promise<Campaign> {
+    return this.prismaUpdate(where, data);
+  }
+
+  async deleteCampaign(where: CampaignWhereUniqueInput): Promise<Campaign> {
+    return this.prisma.campaign.delete({
+      where,
+    });
+  }
+
+  private async prismaUpdate(
     where: CampaignWhereUniqueInput,
     data: CampaignUpdateInput,
   ): Promise<Campaign> {
@@ -153,12 +122,6 @@ export class CampaignRepository {
           },
         },
       },
-    });
-  }
-
-  async deleteCampaign(where: CampaignWhereUniqueInput): Promise<Campaign> {
-    return this.prisma.campaign.delete({
-      where,
     });
   }
 }
