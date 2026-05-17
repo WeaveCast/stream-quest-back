@@ -3,15 +3,15 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { CreateCampaignDto } from '../dto/campaign/create-campaign.dto';
-import { CampaignResponseDto } from '../dto/campaign/campaign-response.dto';
-import { UpdateCampaignDto } from '../dto/campaign/update-campaign.dto';
-import { UpdateStatusDto } from '../dto/campaign/update-status.dto';
-import { UpdateKarmaDto } from '../dto/campaign/update-karma.dto';
+import { CreateCampaignDto } from './dto/create-campaign.dto';
+import { CampaignResponseDto } from './dto/campaign-response.dto';
+import { UpdateCampaignDto } from './dto/update-campaign.dto';
+import { UpdateStatusDto } from './dto/update-status.dto';
+import { UpdateKarmaDto } from './dto/update-karma.dto';
 import {
   CampaignFilterStatus,
   CampaignQueryDto,
-} from '../dto/campaign/campaign-query.dto';
+} from './dto/campaign-query.dto';
 import { CampaignRepository } from './campaign.repository';
 import { JwtPayloadInterface } from '../interfaces/auth.interface';
 import { PaginationResponseDto } from '../dto/pagination-response.dto';

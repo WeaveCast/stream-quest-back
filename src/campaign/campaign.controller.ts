@@ -9,13 +9,13 @@ import {
   Query,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { CreateCampaignDto } from '../dto/campaign/create-campaign.dto';
-import { UpdateCampaignDto } from '../dto/campaign/update-campaign.dto';
-import { UpdateStatusDto } from '../dto/campaign/update-status.dto';
-import { UpdateKarmaDto } from '../dto/campaign/update-karma.dto';
+import { CreateCampaignDto } from './dto/create-campaign.dto';
+import { UpdateCampaignDto } from './dto/update-campaign.dto';
+import { UpdateStatusDto } from './dto/update-status.dto';
+import { UpdateKarmaDto } from './dto/update-karma.dto';
 import { CampaignService } from './campaign.service';
-import { CampaignResponseDto } from '../dto/campaign/campaign-response.dto';
-import { CampaignQueryDto } from '../dto/campaign/campaign-query.dto';
+import { CampaignResponseDto } from './dto/campaign-response.dto';
+import { CampaignQueryDto } from './dto/campaign-query.dto';
 import {
   CreateCampaignRoute,
   DeleteCampaignFromTrashRoute,
