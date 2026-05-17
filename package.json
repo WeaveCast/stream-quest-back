@@ -52,6 +52,7 @@
     "dotenv": "^17.4.2",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^10.0.1",
+    "eslint-plugin-jest": "^29.15.2",
     "eslint-plugin-prettier": "^5.2.2",
     "globals": "^17.0.0",
     "husky": "^9.1.7",
@@ -85,6 +86,7 @@
     "coverageDirectory": "../coverage",
     "testEnvironment": "node",
     "moduleNameMapper": {
+      "^@/(.*)$": "<rootDir>/$1",
       "^(\\.{1,2}/.*)\\.js$": "$1"
     }
   },
