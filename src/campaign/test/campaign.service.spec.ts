@@ -2,49 +2,21 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { CampaignService } from '../campaign.service';
 import { CampaignRepository } from '../campaign.repository';
-import {
-  Campaign,
-  CampaignStatus,
-  ConclusionType,
-} from '../../generated/prisma/client';
-import { JwtPayloadInterface } from '../../interfaces/auth.interface';
+import { CampaignStatus, ConclusionType } from '../../generated/prisma/client';
 import { CampaignFilterStatus } from '../dto/campaign-query.dto';
+import {
+  createMockCampaign,
+  createMockUser,
+} from './fixtures/campaign.fixture';
+import { createMockCampaignRepository } from './mocks/campaign.repository.mock';
 
 describe('CampaignService', () => {
   let service: CampaignService;
   let repository: CampaignRepository;
 
-  const mockUser: JwtPayloadInterface = {
-    sub: 'user-123',
-    username: 'testuser',
-  };
-
-  const mockCampaign: Campaign = {
-    id: 'campaign-123',
-    title: 'Test Campaign',
-    description: 'A test campaign',
-    status: CampaignStatus.ACTIVE,
-    conclusion: null,
-    karmaValue: 0,
-    chaosThreshold: 50,
-    blessingThreshold: 100,
-    createdAt: new Date('2024-01-01'),
-    updatedAt: new Date('2024-01-01'),
-    deletedAt: null,
-    gameMasterId: 'user-123',
-  };
-
-  const mockRepository = {
-    getCampaignList: jest.fn(),
-    getCampaign: jest.fn(),
-    createCampaign: jest.fn(),
-    updateCampaign: jest.fn(),
-    updateCampaignStatus: jest.fn(),
-    updateCampaignKarma: jest.fn(),
-    softRemoveCampaign: jest.fn(),
-    restoreSoftRemovedCampaign: jest.fn(),
-    deleteCampaign: jest.fn(),
-  };
+  const mockUser = createMockUser();
+  const mockCampaign = createMockCampaign();
+  const mockRepository = createMockCampaignRepository();
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -66,8 +38,8 @@ describe('CampaignService', () => {
   describe('getCampaignList', () => {
     it('should return paginated campaign list with active filter', async () => {
       const mockCampaigns = [
-        { ...mockCampaign, id: 'campaign-1' },
-        { ...mockCampaign, id: 'campaign-2' },
+        createMockCampaign({ id: 'campaign-1' }),
+        createMockCampaign({ id: 'campaign-2' }),
       ];
       jest
         .spyOn(repository, 'getCampaignList')
@@ -102,10 +74,9 @@ describe('CampaignService', () => {
     });
 
     it('should detect hasMore when results exceed limit', async () => {
-      const mockCampaigns = Array.from({ length: 11 }, (_, i) => ({
-        ...mockCampaign,
-        id: `campaign-${i}`,
-      }));
+      const mockCampaigns = Array.from({ length: 11 }, (_, i) =>
+        createMockCampaign({ id: `campaign-${i}` }),
+      );
       jest
         .spyOn(repository, 'getCampaignList')
         .mockResolvedValue(mockCampaigns);
@@ -208,7 +179,7 @@ describe('CampaignService', () => {
 
   describe('updateCampaign', () => {
     it('should update campaign with valid thresholds', async () => {
-      const updatedCampaign = { ...mockCampaign, title: 'Updated Title' };
+      const updatedCampaign = createMockCampaign({ title: 'Updated Title' });
       jest
         .spyOn(repository, 'updateCampaign')
         .mockResolvedValue(updatedCampaign);
@@ -231,7 +202,6 @@ describe('CampaignService', () => {
 
       await service.updateCampaign(dto, mockCampaign);
 
-      // Should not throw (uses existing valid thresholds)
       expect(repository.updateCampaign).toHaveBeenCalled();
     });
 
@@ -246,7 +216,7 @@ describe('CampaignService', () => {
     it('should validate merged thresholds correctly', async () => {
       jest.spyOn(repository, 'updateCampaign').mockResolvedValue(mockCampaign);
 
-      const dto = { chaosThreshold: 30 }; // Valid with existing blessing 100
+      const dto = { chaosThreshold: 30 };
 
       await service.updateCampaign(dto, mockCampaign);
 
@@ -256,10 +226,9 @@ describe('CampaignService', () => {
 
   describe('updateCampaignStatus', () => {
     it('should update campaign status', async () => {
-      const updatedCampaign = {
-        ...mockCampaign,
+      const updatedCampaign = createMockCampaign({
         status: CampaignStatus.PAUSED,
-      };
+      });
       jest
         .spyOn(repository, 'updateCampaignStatus')
         .mockResolvedValue(updatedCampaign);
@@ -281,7 +250,7 @@ describe('CampaignService', () => {
 
   describe('updateCampaignKarma', () => {
     it('should update campaign karma', async () => {
-      const updatedCampaign = { ...mockCampaign, karmaValue: 10 };
+      const updatedCampaign = createMockCampaign({ karmaValue: 10 });
       jest
         .spyOn(repository, 'updateCampaignKarma')
         .mockResolvedValue(updatedCampaign);
@@ -300,7 +269,7 @@ describe('CampaignService', () => {
 
   describe('softRemoveCampaign', () => {
     it('should soft delete a campaign', async () => {
-      const deletedCampaign = { ...mockCampaign, deletedAt: new Date() };
+      const deletedCampaign = createMockCampaign({ deletedAt: new Date() });
       jest
         .spyOn(repository, 'softRemoveCampaign')
         .mockResolvedValue(deletedCampaign);
@@ -317,7 +286,7 @@ describe('CampaignService', () => {
 
   describe('restoreSoftRemovedCampaign', () => {
     it('should restore a soft deleted campaign', async () => {
-      const deletedCampaign = { ...mockCampaign, deletedAt: new Date() };
+      const deletedCampaign = createMockCampaign({ deletedAt: new Date() });
       jest
         .spyOn(repository, 'restoreSoftRemovedCampaign')
         .mockResolvedValue(mockCampaign);
@@ -343,7 +312,7 @@ describe('CampaignService', () => {
 
   describe('deleteCampaign', () => {
     it('should permanently delete a soft deleted campaign', async () => {
-      const deletedCampaign = { ...mockCampaign, deletedAt: new Date() };
+      const deletedCampaign = createMockCampaign({ deletedAt: new Date() });
       jest
         .spyOn(repository, 'deleteCampaign')
         .mockResolvedValue(deletedCampaign);

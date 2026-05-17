@@ -1,26 +1,16 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { CampaignRepository } from '../campaign.repository';
 import { PrismaService } from '../../prisma/prisma.service';
-import { Campaign, CampaignStatus } from '../../generated/prisma/client';
+import { CampaignStatus } from '../../generated/prisma/client';
+import { createMockCampaign } from './fixtures/campaign.fixture';
+import { createMockPrismaService } from './mocks/campaign.prisma.mock';
 
 describe('CampaignRepository', () => {
   let repository: CampaignRepository;
   let prismaService: PrismaService;
 
-  const mockCampaign: Campaign = {
-    id: 'campaign-123',
-    title: 'Test Campaign',
-    description: 'A test campaign',
-    status: CampaignStatus.ACTIVE,
-    conclusion: null,
-    karmaValue: 0,
-    chaosThreshold: 50,
-    blessingThreshold: 100,
-    createdAt: new Date('2024-01-01'),
-    updatedAt: new Date('2024-01-01'),
-    deletedAt: null,
-    gameMasterId: 'gm-123',
-  };
+  const mockCampaign = createMockCampaign();
+  const mockPrismaService = createMockPrismaService();
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -28,15 +18,7 @@ describe('CampaignRepository', () => {
         CampaignRepository,
         {
           provide: PrismaService,
-          useValue: {
-            campaign: {
-              findMany: jest.fn(),
-              findFirst: jest.fn(),
-              create: jest.fn(),
-              update: jest.fn(),
-              delete: jest.fn(),
-            },
-          },
+          useValue: mockPrismaService,
         },
       ],
     }).compile();
@@ -80,8 +62,8 @@ describe('CampaignRepository', () => {
 
   describe('getCampaignList', () => {
     const mockCampaigns = [
-      { ...mockCampaign, id: 'campaign-1', title: 'Campaign 1' },
-      { ...mockCampaign, id: 'campaign-2', title: 'Campaign 2' },
+      createMockCampaign({ id: 'campaign-1', title: 'Campaign 1' }),
+      createMockCampaign({ id: 'campaign-2', title: 'Campaign 2' }),
     ];
 
     it('should return campaigns in forward direction', async () => {
@@ -175,7 +157,7 @@ describe('CampaignRepository', () => {
 
   describe('updateCampaign', () => {
     it('should update and return a campaign', async () => {
-      const updatedCampaign = { ...mockCampaign, title: 'Updated Title' };
+      const updatedCampaign = createMockCampaign({ title: 'Updated Title' });
       jest
         .spyOn(prismaService.campaign, 'update')
         .mockResolvedValue(updatedCampaign);
@@ -198,6 +180,71 @@ describe('CampaignRepository', () => {
           },
         },
       });
+    });
+  });
+
+  describe('updateCampaignStatus', () => {
+    it('should update campaign status', async () => {
+      const updatedCampaign = createMockCampaign({
+        status: CampaignStatus.PAUSED,
+      });
+      jest
+        .spyOn(prismaService.campaign, 'update')
+        .mockResolvedValue(updatedCampaign);
+
+      const result = await repository.updateCampaignStatus(
+        { id: 'campaign-123' },
+        { status: CampaignStatus.PAUSED },
+      );
+
+      expect(result).toEqual(updatedCampaign);
+    });
+  });
+
+  describe('updateCampaignKarma', () => {
+    it('should update campaign karma', async () => {
+      const updatedCampaign = createMockCampaign({ karmaValue: 10 });
+      jest
+        .spyOn(prismaService.campaign, 'update')
+        .mockResolvedValue(updatedCampaign);
+
+      const result = await repository.updateCampaignKarma(
+        { id: 'campaign-123' },
+        { karmaValue: 10 },
+      );
+
+      expect(result).toEqual(updatedCampaign);
+    });
+  });
+
+  describe('softRemoveCampaign', () => {
+    it('should soft remove a campaign', async () => {
+      const deletedCampaign = createMockCampaign({ deletedAt: new Date() });
+      jest
+        .spyOn(prismaService.campaign, 'update')
+        .mockResolvedValue(deletedCampaign);
+
+      const result = await repository.softRemoveCampaign(
+        { id: 'campaign-123' },
+        { deletedAt: new Date() },
+      );
+
+      expect(result).toEqual(deletedCampaign);
+    });
+  });
+
+  describe('restoreSoftRemovedCampaign', () => {
+    it('should restore soft removed campaign', async () => {
+      jest
+        .spyOn(prismaService.campaign, 'update')
+        .mockResolvedValue(mockCampaign);
+
+      const result = await repository.restoreSoftRemovedCampaign(
+        { id: 'campaign-123' },
+        { deletedAt: null },
+      );
+
+      expect(result).toEqual(mockCampaign);
     });
   });
 
