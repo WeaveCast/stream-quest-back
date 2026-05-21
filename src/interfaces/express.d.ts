@@ -1,5 +1,5 @@
 import { Campaign } from '../generated/prisma/client';
-import { JwtPayloadInterface } from './auth.interface';
+import { JwtPayloadInterface } from '../auth/interface/auth.interface';
 
 declare global {
   namespace Express {

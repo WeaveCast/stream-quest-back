@@ -9,12 +9,12 @@ import {
   ApiResponse,
   ApiResponseOptions,
 } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../guards/auth/jwt-auth.guard';
+import { JwtAuthGuard } from '../guard/jwt-auth.guard';
 import {
   ErrorResponseDto,
   UnauthorizedResponseDto,
-} from '../dto/error-response.dto';
-import { Public } from './public.decorator';
+} from '../../dto/error-response.dto';
+import { Public } from '../../decorators/public.decorator';
 
 interface ApiPublicRouteOptions {
   responses?: ApiResponseOptions[];

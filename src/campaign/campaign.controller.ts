@@ -27,7 +27,7 @@ import {
   UpdateCampaignRoute,
   UpdateCampaignStatusRoute,
 } from './campaign-routes.decorator';
-import type { JwtPayloadInterface } from '../interfaces/auth.interface';
+import type { JwtPayloadInterface } from '../auth/interface/auth.interface';
 import { UserContext } from '../decorators/user.decorator';
 import { CampaignContext } from './campaign.decorator';
 import type { Campaign } from '../generated/prisma/client';

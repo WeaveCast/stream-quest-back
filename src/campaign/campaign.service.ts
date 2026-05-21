@@ -13,7 +13,7 @@ import {
   CampaignQueryDto,
 } from './dto/campaign-query.dto';
 import { CampaignRepository } from './campaign.repository';
-import { JwtPayloadInterface } from '../interfaces/auth.interface';
+import { JwtPayloadInterface } from '../auth/interface/auth.interface';
 import { PaginationResponseDto } from '../dto/pagination-response.dto';
 import { CampaignWhereInput } from '../generated/prisma/models';
 import { Campaign } from '../generated/prisma/client';
