@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Injectable,
   NotFoundException,
   UnauthorizedException,
@@ -12,7 +13,7 @@ import {
   TwitchTokenInterface,
   JwtPayloadInterface,
   UserInformationsInterface,
-} from '../interfaces/auth.interface';
+} from './interface/auth.interface';
 import * as crypto from 'crypto';
 
 @Injectable()
@@ -62,10 +63,10 @@ export class AuthService {
   }
 
   async getAuthenticatedUser(
-    req: Request,
+    user: JwtPayloadInterface,
   ): Promise<UserInformationsInterface | null> {
     return this.prisma.user.findUnique({
-      where: { id: req.user!.sub },
+      where: { id: user.sub },
       select: {
         id: true,
         username: true,
@@ -90,9 +91,17 @@ export class AuthService {
     const tenMin = 10 * 60 * 1000;
 
     if (!expiresAt || expiresAt - now <= tenMin) {
-      const tokenRefreshed = await this.refreshTwitchToken(user);
-      const userUpdated = await this.updateUserInDatabase(user, tokenRefreshed);
-      return userUpdated.twitchAccessToken!;
+      try {
+        const tokenRefreshed = await this.refreshTwitchToken(user);
+        const userUpdated = await this.updateUserInDatabase(
+          user,
+          tokenRefreshed,
+        );
+        return userUpdated.twitchAccessToken!;
+      } catch {
+        await this.clearTwitchTokenInDatabase(user);
+        throw new UnauthorizedException('Session expired, please login again');
+      }
     }
 
     return user.twitchAccessToken!;
@@ -135,6 +144,10 @@ export class AuthService {
     const savedState: string | undefined = req.signedCookies['oauth_state'] as
       | string
       | undefined;
+
+    if (!code || !state) {
+      throw new BadRequestException('Missing code or state parameter');
+    }
 
     if (!savedState || savedState !== state) {
       throw new UnauthorizedException('Invalid OAuth state');

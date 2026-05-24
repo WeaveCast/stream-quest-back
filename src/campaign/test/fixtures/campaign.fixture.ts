@@ -1,5 +1,5 @@
 import { Campaign, CampaignStatus } from '../../../generated/prisma/client';
-import { JwtPayloadInterface } from '../../../interfaces/auth.interface';
+import { JwtPayloadInterface } from '../../../auth/interface/auth.interface';
 
 export const createMockCampaign = (
   overrides: Partial<Campaign> = {},

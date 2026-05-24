@@ -57,6 +57,7 @@
     "globals": "^17.0.0",
     "husky": "^9.1.7",
     "jest": "^30.0.0",
+    "jest-mock-extended": "^4.0.1",
     "lint-staged": "^17.0.0",
     "prettier": "^3.4.2",
     "prisma": "^7.8.0",
@@ -97,8 +98,7 @@
     },
     "testPathIgnorePatterns": [
       "/node_modules/",
-      "/dist/",
-      "src/auth/.*\\.spec\\.ts$"
+      "/dist/"
     ]
   },
   "lint-staged": {

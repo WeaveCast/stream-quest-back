@@ -9,7 +9,7 @@ import {
   createMockUser,
 } from './fixtures/campaign.fixture';
 import { createMockCampaignService } from './mocks/campaign.service.mock';
-import { JwtAuthGuard } from '../../guards/auth/jwt-auth.guard';
+import { JwtAuthGuard } from '../../auth/guard/jwt-auth.guard';
 import { CampaignOwnershipGuard } from '../guard/campaign-ownership.guard';
 
 describe('CampaignController', () => {

@@ -1,10 +1,12 @@
 import { Controller, Get, Post, Query, Req, Res } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import type { Request, Response } from 'express';
-import { UserInformationsInterface } from '../interfaces/auth.interface';
-import { ApiAuthRoute, ApiPublicRoute } from '../decorators/api-auth.decorator';
+import { UserInformationsInterface } from './interface/auth.interface';
+import type { JwtPayloadInterface } from './interface/auth.interface';
+import { ApiAuthRoute, ApiPublicRoute } from './decorator/api-auth.decorator';
 import { ApiTags } from '@nestjs/swagger';
-import { UserInformationsResponseDto } from '../dto/auth/user-informations-response.dto';
+import { UserInformationsResponseDto } from './dto/user-informations-response.dto';
+import { UserContext } from '../decorators/user.decorator';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -49,9 +51,9 @@ export class AuthController {
     ],
   })
   async userInformations(
-    @Req() req: Request,
+    @UserContext() user: JwtPayloadInterface,
   ): Promise<UserInformationsInterface | null> {
-    return await this.authService.getAuthenticatedUser(req);
+    return await this.authService.getAuthenticatedUser(user);
   }
 
   @Post('logout')
@@ -64,7 +66,13 @@ export class AuthController {
       },
     ],
   })
-  async twitchLogout(@Req() req: Request, @Res() res: Response) {
-    await this.authService.revokeTwitchToken(req.user!.sub, res);
+  async twitchLogout(
+    @UserContext() user: JwtPayloadInterface,
+    @Res() res: Response,
+  ): Promise<Response<{ code: number; message: string }>> {
+    await this.authService.revokeTwitchToken(user.sub, res);
+    return res
+      .status(200)
+      .json({ code: 200, message: 'Successfully logged out' });
   }
 }
