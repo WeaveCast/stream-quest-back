@@ -104,18 +104,6 @@ Global database access service.
 - Connection via `@prisma/adapter-pg`
 - Declared `@Global()` - no explicit import needed in other modules
 
-### CampaignModule
-
-Campaign management with CRUD operations, cursor-based pagination, and soft delete.
-
-- Repository pattern for clean separation of DB/business logic
-- Custom decorators (`@UserContext`, `@CampaignContext`)
-- Bidirectional cursor-based pagination for efficient data retrieval
-- Soft delete with 30-day grace period before permanent deletion
-- CampaignOwnership guard for authorization
-- Threshold validation (chaos < blessing)
-- Global exception filters (Prisma errors → HTTP exceptions)
-
 ---
 
 ## Database Schema
@@ -175,35 +163,7 @@ back/
     prisma/
       prisma.module.ts
       prisma.service.ts
-    campaign/              ← ✅ implemented
-      campaign.module.ts
-      campaign.controller.ts
-      campaign.service.ts
-      campaign.repository.ts
-      campaign.decorator.ts
-      campaign-routes.decorator.ts
-      dto/
-      guard/
-      test/
-        fixtures/
-        mocks/
-        *.spec.ts
-    decorators/
-      user.decorator.ts
-      api-auth.decorator.ts
-    guards/
-      jwt-auth.guard.ts
-      campaign/
-        campaign-ownership.guard.ts
-    filters/
-      prisma-exception.filter.ts
-      all-exceptions.filter.ts
-    dto/
-      error-response.dto.ts
-      pagination-response.dto.ts
-    helpers/
-      swagger.helper.ts
-    auth/
+    auth/                  ← coming soon
     twitch/                ← coming soon
     rules-engine/          ← coming soon
     session/               ← coming soon

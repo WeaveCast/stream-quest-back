@@ -2,15 +2,7 @@
 
 > A real-time TTRPG event engine driven by Twitch viewers, built for game masters who stream.
 
-⚠️ **This project is currently in early development.**
-
-**Status:**
-
-- ✅ Campaign Module (CRUD, pagination, soft delete, 97.8% test coverage)
-- 🚧 Auth Module (in progress)
-- 📋 Rules Engine Module (planned)
-- 📋 Session Module (planned)
-- 📋 Twitch Module (planned)
+⚠️ **This project is currently in early development. No features have been implemented yet.**
 
 ---
 
