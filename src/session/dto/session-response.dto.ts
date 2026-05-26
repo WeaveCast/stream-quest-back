@@ -18,7 +18,7 @@ export class SessionResponseDto {
     example: 'Group discover',
     description: 'Session description',
   })
-  description?: string;
+  description?: string | null;
 
   @ApiPropertyOptional({
     enum: SessionStatus,
@@ -31,13 +31,13 @@ export class SessionResponseDto {
     example: '2026-05-13T10:00:00.000Z',
     description: 'Session starting date',
   })
-  startedAt?: Date;
+  startedAt?: Date | null;
 
   @ApiPropertyOptional({
     example: '2026-05-13T10:00:00.000Z',
     description: 'Session ending date',
   })
-  endedAt?: Date;
+  endedAt?: Date | null;
 
   @ApiProperty({
     example: '2026-05-13T10:00:00.000Z',
