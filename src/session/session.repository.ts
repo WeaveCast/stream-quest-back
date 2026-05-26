@@ -1,9 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import {
-  ContextSnapshotCreateInput,
   ContextSnapshotWhereInput,
-  SessionCreateInput,
   SessionOrderByWithRelationInput,
   SessionUpdateInput,
   SessionWhereInput,
@@ -14,6 +12,8 @@ import {
   Session,
   SessionStatus,
 } from '../generated/prisma/client';
+import { UpdateContextSnapshotDto } from './dto/update-context.dto';
+import { CreateSessionDto } from './dto/create-session.dto';
 
 @Injectable()
 export class SessionRepository {
@@ -64,9 +64,15 @@ export class SessionRepository {
     });
   }
 
-  async createSession(data: SessionCreateInput): Promise<Session> {
+  async createSession(dto: CreateSessionDto): Promise<Session> {
     return await this.prisma.session.create({
-      data,
+      data: {
+        title: dto.title,
+        description: dto.description,
+        campaign: {
+          connect: { id: dto.campaignId },
+        },
+      },
       include: this.includeCount,
     });
   }
@@ -108,9 +114,26 @@ export class SessionRepository {
     });
   }
 
-  async createContextSnapshot(data: ContextSnapshotCreateInput): Promise<void> {
+  async createContextSnapshot(
+    data: UpdateContextSnapshotDto,
+    sessionId: string,
+  ): Promise<void> {
     await this.prisma.contextSnapshot.create({
-      data,
+      data: {
+        session: {
+          connect: {
+            id: sessionId,
+          },
+        },
+        ...(data.weatherId && {
+          weather: { connect: { id: data.weatherId } },
+        }),
+        ...(data.locationId && {
+          location: { connect: { id: data.locationId } },
+        }),
+        timeOfDay: data.timeOfDay,
+        snapshotAt: new Date(),
+      },
     });
   }
 

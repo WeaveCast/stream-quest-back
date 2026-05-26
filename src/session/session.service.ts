@@ -20,11 +20,11 @@ export class SessionService {
   constructor(private readonly repository: SessionRepository) {}
 
   async getSessionList(
-    campaignId: string,
     queryDto: SessionQueryDto,
   ): Promise<PaginationResponseDto<SessionResponseDto>> {
     const whereClause: SessionWhereInput = {
-      campaignId,
+      status: queryDto.status ?? undefined,
+      campaignId: queryDto.campaignId ?? undefined,
     };
 
     const sessions = await this.repository.getSessionList(whereClause, {
@@ -37,15 +37,12 @@ export class SessionService {
     return paginate(sessions, queryDto);
   }
 
-  async getSession(
-    id: string,
-    campaignId: string,
-  ): Promise<SessionResponseDto> {
+  async getSession(id: string): Promise<SessionResponseDto> {
     if (!id) {
       throw new BadRequestException('Session id is missing');
     }
 
-    const whereClause = { id, campaignId };
+    const whereClause = { id };
     const session = await this.repository.getSession(whereClause);
 
     if (!session) {
@@ -56,16 +53,7 @@ export class SessionService {
   }
 
   async createSession(dto: CreateSessionDto): Promise<SessionResponseDto> {
-    const data = {
-      campaign: {
-        connect: {
-          id: dto.campaignId,
-        },
-      },
-      ...dto,
-    };
-
-    return await this.repository.createSession(data);
+    return await this.repository.createSession(dto);
   }
 
   async updateSession(
@@ -96,14 +84,14 @@ export class SessionService {
     return await this.repository.getContextSnapshots({ sessionId: session.id });
   }
 
+  async deleteSession(session: Session): Promise<Session> {
+    return await this.repository.deleteSession({ id: session.id });
+  }
+
   async updateContextSnapshot(
     dto: UpdateContextSnapshotDto,
     session: Session,
   ): Promise<void> {
     await this.repository.createContextSnapshot(dto, session.id);
-  }
-
-  async deleteSession(session: Session): Promise<Session> {
-    return await this.repository.deleteSession({ id: session.id });
   }
 }

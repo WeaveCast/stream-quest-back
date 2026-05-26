@@ -14,7 +14,7 @@ import { JwtPayloadInterface } from '../auth/interface/auth.interface';
 import { PaginationResponseDto } from '../dto/pagination-response.dto';
 import { CampaignWhereInput } from '../generated/prisma/models';
 import { Campaign } from '../generated/prisma/client';
-import { FilterStatus } from '../enum/filter-status.enum';
+import { FilterDeletionStatus } from '../enum/filter-status.enum';
 
 @Injectable()
 export class CampaignService {
@@ -28,14 +28,14 @@ export class CampaignService {
       gameMasterId: user.sub,
     };
 
-    switch (queryDto.status) {
-      case FilterStatus.ACTIVE:
+    switch (queryDto.deletionStatus) {
+      case FilterDeletionStatus.ACTIVE:
         whereClause.deletedAt = null;
         break;
-      case FilterStatus.DELETED:
+      case FilterDeletionStatus.DELETED:
         whereClause.deletedAt = { not: null };
         break;
-      case FilterStatus.ALL:
+      case FilterDeletionStatus.ALL:
         break;
     }
 

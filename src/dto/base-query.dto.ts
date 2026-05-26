@@ -1,18 +1,18 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { FilterStatus } from '../enum/filter-status.enum';
+import { FilterDeletionStatus } from '../enum/filter-status.enum';
 import { Type } from 'class-transformer';
 import { IsEnum, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 
 export class BaseQueryDto {
   // Filters
   @ApiPropertyOptional({
-    enum: FilterStatus,
-    default: FilterStatus.ACTIVE,
+    enum: FilterDeletionStatus,
+    default: FilterDeletionStatus.ACTIVE,
     description: 'Filter by deletion status',
   })
   @IsOptional()
-  @IsEnum(FilterStatus)
-  status?: FilterStatus = FilterStatus.ACTIVE;
+  @IsEnum(FilterDeletionStatus)
+  deletionStatus?: FilterDeletionStatus = FilterDeletionStatus.ACTIVE;
 
   // Pagination
   @ApiPropertyOptional({

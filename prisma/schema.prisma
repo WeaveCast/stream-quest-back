@@ -183,7 +183,7 @@ model ContextSnapshot {
   weatherId               String?
   location                Location?           @relation(fields: [locationId], references: [id])
   locationId              String?
-  session                 Session             @relation(fields: [sessionId], references: [id])
+  session                 Session             @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   sessionId               String
 
   @@index([sessionId])

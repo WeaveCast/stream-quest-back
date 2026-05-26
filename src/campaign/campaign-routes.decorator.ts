@@ -1,12 +1,13 @@
 import { applyDecorators, UseGuards } from '@nestjs/common';
-import { CampaignFilterStatus } from './dto/campaign-query.dto';
 import { CampaignResponseDto } from './dto/campaign-response.dto';
 import { ApiAuthRoute } from '../auth/decorator/api-auth.decorator';
 import { CampaignOwnershipGuard } from './guard/campaign-ownership.guard';
 import {
   customErrorResponse,
   multipleErrorResponses,
+  PAGINATION_QUERIES,
 } from '../helpers/swagger.helper';
+import { FilterDeletionStatus } from '../enum/filter-status.enum';
 
 const CAMPAIGN_ID_PARAM = {
   name: 'id',
@@ -35,10 +36,12 @@ export function GetCampaignListRoute(summary: string) {
     queries: [
       {
         name: 'status',
-        enum: CampaignFilterStatus,
-        description: 'Filter campaigns by status (active, deleted, all)',
-        example: CampaignFilterStatus.ACTIVE,
+        enum: FilterDeletionStatus,
+        description: 'Filter campaigns by deletion status',
+        example: FilterDeletionStatus.ACTIVE,
+        required: false,
       },
+      ...PAGINATION_QUERIES,
     ],
     responses: [
       {
@@ -60,7 +63,7 @@ export function GetCampaignDetailsRoute(summary: string) {
         type: CampaignResponseDto,
       },
       customErrorResponse(400, 'Campaign id not provided', 'Bad Request'),
-      customErrorResponse(404, 'Campaign not found', 'Campaign not found'),
+      customErrorResponse(404, 'Campaign not found', 'Not found'),
     ],
   });
 }
