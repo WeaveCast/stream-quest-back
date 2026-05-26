@@ -3,7 +3,7 @@ import { ExecutionContext } from '@nestjs/common';
 import { CampaignController } from '../campaign.controller';
 import { CampaignService } from '../campaign.service';
 import { CampaignStatus, ConclusionType } from '../../generated/prisma/client';
-import { CampaignFilterStatus } from '../dto/campaign-query.dto';
+import { FilterDeletionStatus } from '../../enum/filter-status.enum';
 import {
   createMockCampaign,
   createMockUser,
@@ -71,13 +71,13 @@ describe('CampaignController', () => {
       jest.spyOn(service, 'getCampaignList').mockResolvedValue(mockResponse);
 
       const result = await controller.campaignList(
-        { status: CampaignFilterStatus.ACTIVE, limit: 10 },
+        { deletionStatus: FilterDeletionStatus.ACTIVE, limit: 10 },
         mockUser,
       );
 
       expect(result).toEqual(mockResponse);
       expect(service.getCampaignList).toHaveBeenCalledWith(mockUser, {
-        status: CampaignFilterStatus.ACTIVE,
+        deletionStatus: FilterDeletionStatus.ACTIVE,
         limit: 10,
       });
     });
@@ -95,7 +95,7 @@ describe('CampaignController', () => {
 
       await controller.campaignList(
         {
-          status: CampaignFilterStatus.ALL,
+          deletionStatus: FilterDeletionStatus.ALL,
           limit: 5,
           cursor: 'cursor-123',
           direction: 'forward',
@@ -104,7 +104,7 @@ describe('CampaignController', () => {
       );
 
       expect(service.getCampaignList).toHaveBeenCalledWith(mockUser, {
-        status: CampaignFilterStatus.ALL,
+        deletionStatus: FilterDeletionStatus.ALL,
         limit: 5,
         cursor: 'cursor-123',
         direction: 'forward',
