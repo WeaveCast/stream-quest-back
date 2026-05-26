@@ -55,6 +55,13 @@ enum ContextType {
   LOCATION
 }
 
+enum TimeOfDay {
+  DAWN
+  DAY
+  DUSK
+  NIGHT
+}
+
 enum ThresholdType {
   CHAOS
   BLESSING
@@ -120,6 +127,7 @@ model Campaign {
 model Session {
   id                      String              @id @default(uuid())
   title                   String
+  description             String?
   status                  SessionStatus       @default(PLANNED)
   startedAt               DateTime?        
   endedAt                 DateTime?       
@@ -138,15 +146,49 @@ model Session {
   @@index([status])
 }
 
+model Weather {
+  id                String              @id @default(uuid())
+  name              String              @unique
+  displayName       String
+  description       String?
+  iconUrl           String?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  contextSnapshots  ContextSnapshot[]
+
+  @@index([name])
+}
+
+model Location {
+  id                String              @id @default(uuid())
+  name              String              @unique
+  displayName       String
+  description       String?
+  imageUrl          String?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  contextSnapshots  ContextSnapshot[]
+
+  @@index([name])
+}
+
 model ContextSnapshot {
   id                      String              @id @default(uuid())
-  timeOfDay               String?
-  weather                 String?
-  location                String?
+  timeOfDay               TimeOfDay?
   snapshotAt              DateTime
   
+  weather                 Weather?            @relation(fields: [weatherId], references: [id])
+  weatherId               String?
+  location                Location?           @relation(fields: [locationId], references: [id])
+  locationId              String?
   session                 Session             @relation(fields: [sessionId], references: [id])
   sessionId               String
+
+  @@index([sessionId])
+  @@index([weatherId])
+  @@index([locationId])
 }
 
 model KarmaEvent {
