@@ -8,11 +8,32 @@ import {
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 
+interface HttpExceptionResponse {
+  statusCode: number;
+  message: string | string[];
+  error?: string;
+}
+
+interface ErrorResponse {
+  statusCode: number;
+  message: string | string[];
+  timestamp: string;
+  path: string;
+  debug?: {
+    method: string;
+    body: unknown;
+    params: unknown;
+    query: unknown;
+    headers: Record<string, unknown>;
+    exception: unknown;
+  };
+}
+
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
   private readonly logger = new Logger(AllExceptionsFilter.name);
 
-  catch(exception: unknown, host: ArgumentsHost) {
+  catch(exception: unknown, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request>();
@@ -23,13 +44,13 @@ export class AllExceptionsFilter implements ExceptionFilter {
         ? exception.getStatus()
         : HttpStatus.INTERNAL_SERVER_ERROR;
 
-    let message = 'Internal server error';
+    let message: string | string[] = 'Internal server error';
     if (exception instanceof HttpException) {
       const exceptionResponse = exception.getResponse();
       message =
         typeof exceptionResponse === 'string'
           ? exceptionResponse
-          : (exceptionResponse as any).message || message;
+          : (exceptionResponse as HttpExceptionResponse).message || message;
     } else if (exception instanceof Error) {
       message = exception.message;
     }
@@ -39,7 +60,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       exception instanceof Error ? exception.stack : exception,
     );
 
-    const errorResponse: any = {
+    const errorResponse: ErrorResponse = {
       statusCode: status,
       message,
       timestamp: new Date().toISOString(),

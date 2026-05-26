@@ -8,19 +8,17 @@ import { CampaignResponseDto } from './dto/campaign-response.dto';
 import { UpdateCampaignDto } from './dto/update-campaign.dto';
 import { UpdateStatusDto } from './dto/update-status.dto';
 import { UpdateKarmaDto } from './dto/update-karma.dto';
-import {
-  CampaignFilterStatus,
-  CampaignQueryDto,
-} from './dto/campaign-query.dto';
+import { CampaignQueryDto } from './dto/campaign-query.dto';
 import { CampaignRepository } from './campaign.repository';
 import { JwtPayloadInterface } from '../auth/interface/auth.interface';
 import { PaginationResponseDto } from '../dto/pagination-response.dto';
 import { CampaignWhereInput } from '../generated/prisma/models';
 import { Campaign } from '../generated/prisma/client';
+import { FilterStatus } from '../enum/filter-status.enum';
 
 @Injectable()
 export class CampaignService {
-  constructor(private readonly reposity: CampaignRepository) {}
+  constructor(private readonly repository: CampaignRepository) {}
 
   async getCampaignList(
     user: JwtPayloadInterface,
@@ -31,18 +29,18 @@ export class CampaignService {
     };
 
     switch (queryDto.status) {
-      case CampaignFilterStatus.ACTIVE:
+      case FilterStatus.ACTIVE:
         whereClause.deletedAt = null;
         break;
-      case CampaignFilterStatus.DELETED:
+      case FilterStatus.DELETED:
         whereClause.deletedAt = { not: null };
         break;
-      case CampaignFilterStatus.ALL:
+      case FilterStatus.ALL:
         break;
     }
 
     const limit = queryDto.limit || 10;
-    const campaigns = await this.reposity.getCampaignList(whereClause, {
+    const campaigns = await this.repository.getCampaignList(whereClause, {
       take: limit + 1,
       cursor: queryDto.cursor,
       direction: queryDto.direction,
@@ -70,7 +68,7 @@ export class CampaignService {
     }
 
     const whereClause = { id: id, gameMasterId: user.sub };
-    const campaign = await this.reposity.getCampaign(whereClause);
+    const campaign = await this.repository.getCampaign(whereClause);
 
     if (!campaign) {
       throw new NotFoundException('Campaign not found');
@@ -97,7 +95,7 @@ export class CampaignService {
       ...dto,
     };
 
-    return this.reposity.createCampaign(data);
+    return this.repository.createCampaign(data);
   }
 
   async updateCampaign(
@@ -112,7 +110,7 @@ export class CampaignService {
     const campaignId: string = campaign.id;
     const whereClause = { id: campaignId };
 
-    return this.reposity.updateCampaign(whereClause, dto);
+    return this.repository.updateCampaign(whereClause, dto);
   }
 
   async updateCampaignStatus(
@@ -122,7 +120,7 @@ export class CampaignService {
     const campaignId: string = campaign.id;
     const whereClause = { id: campaignId };
 
-    return this.reposity.updateCampaignStatus(whereClause, dto);
+    return this.repository.updateCampaignStatus(whereClause, dto);
   }
 
   async updateCampaignKarma(
@@ -132,7 +130,7 @@ export class CampaignService {
     const campaignId: string = campaign.id;
     const whereClause = { id: campaignId };
 
-    return this.reposity.updateCampaignKarma(whereClause, dto);
+    return this.repository.updateCampaignKarma(whereClause, dto);
   }
 
   async softRemoveCampaign(campaign: Campaign): Promise<CampaignResponseDto> {
@@ -140,7 +138,7 @@ export class CampaignService {
     const whereClause = { id: campaignId };
     const data = { deletedAt: new Date() };
 
-    return this.reposity.softRemoveCampaign(whereClause, data);
+    return this.repository.softRemoveCampaign(whereClause, data);
   }
 
   async restoreSoftRemovedCampaign(
@@ -154,7 +152,7 @@ export class CampaignService {
     const whereClause = { id: campaignId };
     const data = { deletedAt: null };
 
-    return this.reposity.restoreSoftRemovedCampaign(whereClause, data);
+    return this.repository.restoreSoftRemovedCampaign(whereClause, data);
   }
 
   async deleteCampaign(campaign: Campaign): Promise<CampaignResponseDto> {
@@ -165,7 +163,7 @@ export class CampaignService {
     const campaignId: string = campaign.id;
     const whereClause = { id: campaignId };
 
-    return this.reposity.deleteCampaign(whereClause);
+    return this.repository.deleteCampaign(whereClause);
   }
 
   private validateThresholds(thresholds: {
