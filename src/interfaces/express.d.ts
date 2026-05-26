@@ -6,6 +6,7 @@ declare global {
     interface Request {
       user?: JwtPayloadInterface;
       campaign?: Campaign;
+      session?: Session;
     }
   }
 }

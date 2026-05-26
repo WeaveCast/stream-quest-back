@@ -1,5 +1,29 @@
 import { ApiResponseOptions } from '@nestjs/swagger';
 
+export const PAGINATION_QUERIES = [
+  {
+    name: 'limit',
+    type: Number,
+    description: 'Number of items per page (1-100)',
+    example: 10,
+    required: false,
+  },
+  {
+    name: 'cursor',
+    type: String,
+    description: 'Cursor ID from previous page response',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+    required: false,
+  },
+  {
+    name: 'direction',
+    enum: ['forward', 'backward'],
+    description: 'Navigation direction',
+    example: 'forward',
+    required: false,
+  },
+];
+
 export function customErrorResponse(
   status: number,
   message: string,

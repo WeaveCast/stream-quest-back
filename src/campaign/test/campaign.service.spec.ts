@@ -3,7 +3,7 @@ import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { CampaignService } from '../campaign.service';
 import { CampaignRepository } from '../campaign.repository';
 import { CampaignStatus } from '../../generated/prisma/client';
-import { CampaignFilterStatus } from '../dto/campaign-query.dto';
+import { FilterDeletionStatus } from '../../enum/filter-status.enum';
 import {
   createMockCampaign,
   createMockUser,
@@ -46,7 +46,7 @@ describe('CampaignService', () => {
         .mockResolvedValue(mockCampaigns);
 
       const result = await service.getCampaignList(mockUser, {
-        status: CampaignFilterStatus.ACTIVE,
+        deletionStatus: FilterDeletionStatus.ACTIVE,
         limit: 10,
       });
 
@@ -63,7 +63,7 @@ describe('CampaignService', () => {
       jest.spyOn(repository, 'getCampaignList').mockResolvedValue([]);
 
       await service.getCampaignList(mockUser, {
-        status: CampaignFilterStatus.DELETED,
+        deletionStatus: FilterDeletionStatus.DELETED,
         limit: 10,
       });
 
